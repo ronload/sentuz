@@ -47,3 +47,5 @@ temp/
 # AI
 .claude/
 CLAUDE.md
+
+/src/generated/prisma
