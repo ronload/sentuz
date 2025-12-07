@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Account } from "@/generated/prisma";
+import { Account } from "@prisma/client";
 
 interface UpsertGmailAccountProps {
   email: string;
@@ -23,7 +23,6 @@ export async function upsertGmailAccount({
     },
     update: {
       accessToken,
-      refreshToken,
       expiresAt,
     },
     create: {
