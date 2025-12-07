@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       refreshToken: tokens.refresh_token!,
       expiresAt: new Date(tokens.expiry_date!),
     });
-    redirect("/");
   } catch (error) {
     console.error(`Gmail OAuth error: ${error}`);
     return NextResponse.json(
@@ -46,4 +45,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
+  redirect("/");
 }

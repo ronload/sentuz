@@ -14,6 +14,12 @@ export async function upsertGmailAccount({
   refreshToken,
   expiresAt,
 }: UpsertGmailAccountProps): Promise<Account> {
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: { email },
+  });
+
   return prisma.account.upsert({
     where: {
       provider_email: {
@@ -31,7 +37,7 @@ export async function upsertGmailAccount({
       accessToken,
       refreshToken,
       expiresAt,
-      userId: "temp-user-id", // TODO: need to handle this later
+      userId: user.id,
     },
   });
 }
