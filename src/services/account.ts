@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Account } from "@prisma/client";
 
-interface UpsertGmailAccountProps {
+interface UpsertAccountProps {
   email: string;
   accessToken: string;
   refreshToken: string;
@@ -13,7 +13,7 @@ export async function upsertGmailAccount({
   accessToken,
   refreshToken,
   expiresAt,
-}: UpsertGmailAccountProps): Promise<Account> {
+}: UpsertAccountProps): Promise<Account> {
   const user = await prisma.user.upsert({
     where: { email },
     update: {},
@@ -33,6 +33,41 @@ export async function upsertGmailAccount({
     },
     create: {
       provider: "gmail",
+      email,
+      accessToken,
+      refreshToken,
+      expiresAt,
+      userId: user.id,
+    },
+  });
+}
+
+export async function upsertOutlookAccount({
+  email,
+  accessToken,
+  refreshToken,
+  expiresAt,
+}: UpsertAccountProps): Promise<Account> {
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: { email },
+  });
+
+  return prisma.account.upsert({
+    where: {
+      provider_email: {
+        provider: "outlook",
+        email,
+      },
+    },
+    update: {
+      accessToken,
+      refreshToken,
+      expiresAt,
+    },
+    create: {
+      provider: "outlook",
       email,
       accessToken,
       refreshToken,
