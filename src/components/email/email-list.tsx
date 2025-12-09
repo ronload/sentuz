@@ -159,10 +159,9 @@ function EmailListSkeleton() {
 
 function EmptyState() {
   const { t } = useI18n();
-
   return (
-    <div className="bg-card flex h-64 flex-col items-center justify-center gap-4 rounded-xl text-center shadow-sm">
-      <div className="bg-muted rounded-full p-4">
+    <div className="flex h-64 h-full flex-col items-center justify-center gap-4 rounded-xl text-center shadow-sm">
+      <div className="rounded-full p-4">
         <Inbox className="text-muted-foreground h-8 w-8" />
       </div>
       <div>
