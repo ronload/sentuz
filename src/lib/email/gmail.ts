@@ -65,20 +65,22 @@ export class GmailService implements IEmailService {
       labelIds: params.folderId ? [params.folderId] : undefined,
     });
 
-    const messages: EmailListItem[] = [];
-
-    if (response.data.messages) {
-      for (const msg of response.data.messages) {
-        const detail = await this.gmail.users.messages.get({
-          userId: "me",
-          id: msg.id!,
-          format: "metadata",
-          metadataHeaders: ["From", "Subject", "Date"],
-        });
-
-        messages.push(this.parseEmailListItem(detail.data));
-      }
+    if (!response.data.messages) {
+      return { messages: [], nextPageToken: undefined };
     }
+
+    // Parallel fetch all email details for better performance
+    const detailPromises = response.data.messages.map((msg) =>
+      this.gmail.users.messages.get({
+        userId: "me",
+        id: msg.id!,
+        format: "metadata",
+        metadataHeaders: ["From", "Subject", "Date"],
+      })
+    );
+
+    const details = await Promise.all(detailPromises);
+    const messages = details.map((detail) => this.parseEmailListItem(detail.data));
 
     return {
       messages,

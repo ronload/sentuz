@@ -237,6 +237,35 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
     }
   }, [nextPageToken, isLoading, fetchEmails]);
 
+  // Optimistic update helper for immediate UI feedback
+  const updateEmail = React.useCallback((emailId: string, updates: Partial<Email>) => {
+    setEmails((prev) => prev.map((e) => (e.id === emailId ? { ...e, ...updates } : e)));
+  }, []);
+
+  // Remove email from list (for delete operations)
+  // Returns the removed email for potential rollback
+  const removeEmail = React.useCallback((emailId: string): Email | undefined => {
+    let removedEmail: Email | undefined;
+    setEmails((prev) => {
+      removedEmail = prev.find((e) => e.id === emailId);
+      return prev.filter((e) => e.id !== emailId);
+    });
+    return removedEmail;
+  }, []);
+
+  // Restore a previously removed email (for rollback)
+  const restoreEmail = React.useCallback((email: Email, index?: number) => {
+    setEmails((prev) => {
+      if (index !== undefined && index >= 0 && index <= prev.length) {
+        const newEmails = [...prev];
+        newEmails.splice(index, 0, email);
+        return newEmails;
+      }
+      // If no index, add at the beginning (most recent)
+      return [email, ...prev];
+    });
+  }, []);
+
   return {
     emails,
     // Show loading state until first successful load completes
@@ -246,6 +275,9 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
     hasMore: !!nextPageToken,
     loadMore,
     refetch: () => fetchEmails(),
+    updateEmail,
+    removeEmail,
+    restoreEmail,
   };
 }
 

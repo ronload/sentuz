@@ -54,6 +54,9 @@ export function DashboardClient({ user }: DashboardClientProps) {
     hasMore,
     loadMore,
     refetch: refetchEmails,
+    updateEmail,
+    removeEmail,
+    restoreEmail,
   } = useEmails({
     accountId: selectedAccountId,
     folderId: selectedFolderId,
@@ -97,31 +100,62 @@ export function DashboardClient({ user }: DashboardClientProps) {
   };
 
   const handleStarEmail = async (emailId: string, isStarred: boolean) => {
-    if (isStarred) {
-      await star(emailId);
-    } else {
-      await unstar(emailId);
+    // Optimistic update - immediate UI feedback
+    updateEmail(emailId, { isStarred });
+    try {
+      if (isStarred) {
+        await star(emailId);
+      } else {
+        await unstar(emailId);
+      }
+    } catch {
+      // Rollback on error
+      updateEmail(emailId, { isStarred: !isStarred });
     }
-    refetchEmails();
   };
 
   const handleMarkAsRead = async (emailId: string) => {
-    await markAsRead(emailId);
-    refetchEmails();
+    // Optimistic update
+    updateEmail(emailId, { isRead: true });
+    try {
+      await markAsRead(emailId);
+    } catch {
+      // Rollback on error
+      updateEmail(emailId, { isRead: false });
+    }
   };
 
   const handleMarkAsUnread = async (emailId: string) => {
-    await markAsUnread(emailId);
-    refetchEmails();
+    // Optimistic update
+    updateEmail(emailId, { isRead: false });
+    try {
+      await markAsUnread(emailId);
+    } catch {
+      // Rollback on error
+      updateEmail(emailId, { isRead: true });
+    }
   };
 
   const handleDeleteEmail = async (emailId: string) => {
-    await deleteEmail(emailId);
+    // Store email index for rollback
+    const emailIndex = emails.findIndex((e) => e.id === emailId);
+    const emailToDelete = emails[emailIndex];
+
+    // Optimistic update - remove from list immediately
+    removeEmail(emailId);
     if (selectedEmailId === emailId) {
       setSelectedEmailId(undefined);
       setSelectedThreadId(undefined);
     }
-    refetchEmails();
+
+    try {
+      await deleteEmail(emailId);
+    } catch {
+      // Rollback on error - restore the email at original position
+      if (emailToDelete) {
+        restoreEmail(emailToDelete, emailIndex);
+      }
+    }
   };
 
   const handleReply = (emailId: string, replyAll?: boolean) => {
