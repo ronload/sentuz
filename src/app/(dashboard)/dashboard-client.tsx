@@ -6,13 +6,8 @@ import { Header } from "@/components/layout/header";
 import { EmailList, type EmailViewMode, type EmailCategory } from "@/components/email/email-list";
 import { EmailThreadView } from "@/components/email/email-thread-view";
 import { ComposeDialog } from "@/components/email/compose-dialog";
-import {
-  useAccounts,
-  useFolders,
-  useEmails,
-  useEmailThread,
-  useEmailActions,
-} from "@/hooks/use-emails";
+import { useFolders, useEmails, useEmailThread, useEmailActions } from "@/hooks/use-emails";
+import { useInitialData } from "@/hooks/use-initial-data";
 
 interface User {
   id: string;
@@ -46,23 +41,51 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const [emailViewMode, setEmailViewMode] = React.useState<EmailViewMode>("list");
   const [emailCategory, setEmailCategory] = React.useState<EmailCategory>("all");
 
-  const { accounts } = useAccounts();
-  const { folders } = useFolders(selectedAccountId);
+  // Track if we should use initial data or fetch new data
+  const [useInitialEmails, setUseInitialEmails] = React.useState(true);
+
+  // Initial data loading - parallel fetch of accounts, folders, and emails
   const {
-    emails,
-    isLoading: emailsLoading,
+    accounts: initialAccounts,
+    folders: initialFolders,
+    emails: initialEmails,
+    defaultAccountId,
+    defaultFolderId,
+    isLoading: initialLoading,
+    updateEmail: updateInitialEmail,
+    removeEmail: removeInitialEmail,
+    restoreEmail: restoreInitialEmail,
+  } = useInitialData();
+
+  // Subsequent data loading - for folder changes, search, etc.
+  const { folders: subsequentFolders } = useFolders(
+    useInitialEmails ? undefined : selectedAccountId
+  );
+  const {
+    emails: subsequentEmails,
+    isLoading: subsequentEmailsLoading,
     hasMore,
     loadMore,
     refetch: refetchEmails,
-    updateEmail,
-    removeEmail,
-    restoreEmail,
+    updateEmail: updateSubsequentEmail,
+    removeEmail: removeSubsequentEmail,
+    restoreEmail: restoreSubsequentEmail,
   } = useEmails({
-    accountId: selectedAccountId,
-    folderId: selectedFolderId,
+    accountId: useInitialEmails ? undefined : selectedAccountId,
+    folderId: useInitialEmails ? undefined : selectedFolderId,
     query: searchQuery,
     category: emailCategory,
   });
+
+  // Use initial data until user changes folder/search/category
+  const accounts = initialAccounts;
+  const folders = useInitialEmails ? initialFolders : subsequentFolders;
+  const emails = useInitialEmails ? initialEmails : subsequentEmails;
+  const emailsLoading = useInitialEmails ? initialLoading : subsequentEmailsLoading;
+  const updateEmail = useInitialEmails ? updateInitialEmail : updateSubsequentEmail;
+  const removeEmail = useInitialEmails ? removeInitialEmail : removeSubsequentEmail;
+  const restoreEmail = useInitialEmails ? restoreInitialEmail : restoreSubsequentEmail;
+
   const { messages: threadMessages, isLoading: threadLoading } = useEmailThread(
     selectedAccountId,
     selectedThreadId
@@ -70,20 +93,18 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const { markAsRead, markAsUnread, star, unstar, deleteEmail, sendEmail, reply, forward } =
     useEmailActions(selectedAccountId);
 
+  // Set initial selection from initial data
   React.useEffect(() => {
-    if (accounts.length > 0 && !selectedAccountId) {
-      setSelectedAccountId(accounts[0].id);
+    if (!initialLoading && defaultAccountId && !selectedAccountId) {
+      setSelectedAccountId(defaultAccountId);
     }
-  }, [accounts, selectedAccountId]);
+  }, [initialLoading, defaultAccountId, selectedAccountId]);
 
   React.useEffect(() => {
-    if (folders.length > 0 && !selectedFolderId) {
-      const targetFolder = folders.find((f) => f.type === selectedFolderType);
-      if (targetFolder) {
-        setSelectedFolderId(targetFolder.id);
-      }
+    if (!initialLoading && defaultFolderId && !selectedFolderId) {
+      setSelectedFolderId(defaultFolderId);
     }
-  }, [folders, selectedFolderId, selectedFolderType]);
+  }, [initialLoading, defaultFolderId, selectedFolderId]);
 
   React.useEffect(() => {
     if (selectedEmailId && threadMessages.length > 0) {
@@ -207,9 +228,17 @@ export function DashboardClient({ user }: DashboardClientProps) {
   };
 
   const handleSearch = (query: string) => {
+    setUseInitialEmails(false);
     setSearchQuery(query || undefined);
     setSelectedEmailId(undefined);
     setSelectedThreadId(undefined);
+  };
+
+  const handleCategoryChange = (category: EmailCategory) => {
+    if (category !== emailCategory) {
+      setUseInitialEmails(false);
+    }
+    setEmailCategory(category);
   };
 
   const accountsWithEmail = accounts.map((acc) => ({
@@ -229,12 +258,17 @@ export function DashboardClient({ user }: DashboardClientProps) {
         selectedAccountId={selectedAccountId}
         selectedFolder={selectedFolderType}
         onSelectAccount={(id) => {
+          setUseInitialEmails(false);
           setSelectedAccountId(id);
           setSelectedFolderId(undefined);
           setSelectedEmailId(undefined);
           setSelectedThreadId(undefined);
         }}
         onSelectFolder={(folder) => {
+          // Only switch to subsequent data if folder actually changes
+          if (folder !== selectedFolderType) {
+            setUseInitialEmails(false);
+          }
           setSelectedFolderType(folder);
           const matchingFolder = folders.find((f) => f.type === folder);
           if (matchingFolder) {
@@ -265,7 +299,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
               viewMode={emailViewMode}
               onViewModeChange={setEmailViewMode}
               category={emailCategory}
-              onCategoryChange={setEmailCategory}
+              onCategoryChange={handleCategoryChange}
               onSelectEmail={handleSelectEmail}
               onStarEmail={handleStarEmail}
               onMarkAsRead={handleMarkAsRead}

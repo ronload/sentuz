@@ -52,10 +52,20 @@ async function refreshMicrosoftToken(refreshToken: string): Promise<TokenRespons
   return response.json();
 }
 
-export async function getValidAccessToken(accountId: string): Promise<string> {
-  const account = await prisma.account.findUnique({
-    where: { id: accountId },
-  });
+interface AccountData {
+  id: string;
+  provider: string;
+  access_token: string | null;
+  refresh_token: string | null;
+  expires_at: number | null;
+}
+
+export async function getValidAccessToken(accountOrId: string | AccountData): Promise<string> {
+  // Support both account ID (string) and account object
+  const account =
+    typeof accountOrId === "string"
+      ? await prisma.account.findUnique({ where: { id: accountOrId } })
+      : accountOrId;
 
   if (!account) {
     throw new Error("Account not found");
@@ -91,7 +101,7 @@ export async function getValidAccessToken(accountId: string): Promise<string> {
 
   // Update the database with new tokens
   const updatedAccount = await prisma.account.update({
-    where: { id: accountId },
+    where: { id: account.id },
     data: {
       access_token: tokenResponse.access_token,
       expires_at: Math.floor(Date.now() / 1000) + tokenResponse.expires_in,
