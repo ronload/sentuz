@@ -22,10 +22,7 @@ export class OutlookService implements IEmailService {
     this.accessToken = accessToken;
   }
 
-  private async fetch<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const response = await fetch(`${GRAPH_API_BASE}${endpoint}`, {
       ...options,
       headers: {
@@ -74,9 +71,7 @@ export class OutlookService implements IEmailService {
       };
     }
 
-    const response = await this.fetch<any>(
-      `${endpoint}?${queryParams.toString()}`
-    );
+    const response = await this.fetch<any>(`${endpoint}?${queryParams.toString()}`);
 
     return {
       messages: response.value.map(this.parseEmailListItem),
@@ -220,13 +215,8 @@ export class OutlookService implements IEmailService {
     }));
   }
 
-  async getAttachment(
-    emailId: string,
-    attachmentId: string
-  ): Promise<AttachmentContent> {
-    const response = await this.fetch<any>(
-      `/me/messages/${emailId}/attachments/${attachmentId}`
-    );
+  async getAttachment(emailId: string, attachmentId: string): Promise<AttachmentContent> {
+    const response = await this.fetch<any>(`/me/messages/${emailId}/attachments/${attachmentId}`);
 
     return {
       id: response.id,
@@ -237,13 +227,8 @@ export class OutlookService implements IEmailService {
     };
   }
 
-  async reply(
-    id: string,
-    params: ReplyEmailParams
-  ): Promise<{ id: string }> {
-    const endpoint = params.replyAll
-      ? `/me/messages/${id}/replyAll`
-      : `/me/messages/${id}/reply`;
+  async reply(id: string, params: ReplyEmailParams): Promise<{ id: string }> {
+    const endpoint = params.replyAll ? `/me/messages/${id}/replyAll` : `/me/messages/${id}/reply`;
 
     await this.fetch(endpoint, {
       method: "POST",
@@ -260,10 +245,7 @@ export class OutlookService implements IEmailService {
     return { id: "sent" };
   }
 
-  async forward(
-    id: string,
-    params: ForwardEmailParams
-  ): Promise<{ id: string }> {
+  async forward(id: string, params: ForwardEmailParams): Promise<{ id: string }> {
     await this.fetch(`/me/messages/${id}/forward`, {
       method: "POST",
       body: JSON.stringify({

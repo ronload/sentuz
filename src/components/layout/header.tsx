@@ -19,15 +19,15 @@ export function Header({ onSearch }: HeaderProps) {
   return (
     <form
       onSubmit={handleSearch}
-      className="flex h-12 items-center gap-3 rounded-xl bg-card px-4 shadow-sm"
+      className="bg-card flex h-12 items-center gap-3 rounded-xl px-4 shadow-sm"
     >
-      <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <Search className="text-muted-foreground h-4 w-4 shrink-0" />
       <input
         type="search"
         placeholder="Search emails..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        className="placeholder:text-muted-foreground flex-1 bg-transparent text-sm outline-none"
       />
       <Kbd>/</Kbd>
     </form>

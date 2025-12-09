@@ -106,14 +106,7 @@ export interface EmailCardProps {
   onForward?: () => void;
 }
 
-export function EmailCard({
-  subject,
-  from,
-  snippet,
-  isRead,
-  isSelected,
-  onClick,
-}: EmailCardProps) {
+export function EmailCard({ subject, from, snippet, isRead, isSelected, onClick }: EmailCardProps) {
   const senderName = from.name || from.address.split("@")[0];
   const title = subject || "(No Subject)";
   const initial = (from.name || from.address)[0]?.toUpperCase() || "?";
@@ -156,7 +149,7 @@ export function EmailCard({
             />
           ) : (
             <AvatarFallback
-              className="text-white text-xs font-medium"
+              className="text-xs font-medium text-white"
               style={{ backgroundColor: avatarColor }}
             >
               {initial}
@@ -185,19 +178,13 @@ export function EmailCard({
           {senderName}
         </div>
         <div
-          className={cn(
-            "text-sm",
-            isRead ? "text-muted-foreground" : "font-medium"
-          )}
+          className={cn("text-sm", isRead ? "text-muted-foreground" : "font-medium")}
           style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
         >
           {title}
         </div>
         <div
-          className={cn(
-            "text-xs",
-            isRead ? "text-muted-foreground/70" : "text-foreground/80"
-          )}
+          className={cn("text-xs", isRead ? "text-muted-foreground/70" : "text-foreground/80")}
           style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
         >
           {snippet}

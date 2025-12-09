@@ -18,10 +18,7 @@ export async function GET(
   const accountId = request.nextUrl.searchParams.get("accountId");
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   const account = await prisma.account.findFirst({
@@ -50,9 +47,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error downloading attachment:", error);
-    return NextResponse.json(
-      { error: "Failed to download attachment" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to download attachment" }, { status: 500 });
   }
 }

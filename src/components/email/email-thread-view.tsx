@@ -209,15 +209,13 @@ function EmptyState() {
   const { t } = useI18n();
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 rounded-xl bg-card text-center shadow-sm">
-      <div className="rounded-full bg-muted p-4">
-        <Mail className="h-8 w-8 text-muted-foreground" />
+    <div className="bg-card flex h-full flex-col items-center justify-center gap-4 rounded-xl text-center shadow-sm">
+      <div className="bg-muted rounded-full p-4">
+        <Mail className="text-muted-foreground h-8 w-8" />
       </div>
       <div>
         <h3 className="font-medium">{t.email.noEmailSelected}</h3>
-        <p className="text-sm text-muted-foreground">
-          {t.email.selectEmailToView}
-        </p>
+        <p className="text-muted-foreground text-sm">{t.email.selectEmailToView}</p>
       </div>
     </div>
   );
@@ -226,7 +224,7 @@ function EmptyState() {
 function ThreadSkeleton() {
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex-1 rounded-xl bg-card p-6 shadow-sm">
+      <div className="bg-card flex-1 rounded-xl p-6 shadow-sm">
         <div className="flex items-start gap-4">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="flex-1 space-y-2">
@@ -287,12 +285,7 @@ function ThreadMessageCard({
   }, [logoUrl]);
 
   return (
-    <div
-      className={cn(
-        "flex flex-col rounded-xl bg-card shadow-sm",
-        isFullHeight ? "h-full" : ""
-      )}
-    >
+    <div className={cn("bg-card flex flex-col rounded-xl shadow-sm", isFullHeight ? "h-full" : "")}>
       {/* Header */}
       <div className="flex items-start gap-4 border-b p-4">
         <Avatar className="h-10 w-10 shrink-0">
@@ -304,7 +297,7 @@ function ThreadMessageCard({
             />
           ) : (
             <AvatarFallback
-              className="text-white text-sm font-medium"
+              className="text-sm font-medium text-white"
               style={{ backgroundColor: avatarColor }}
             >
               {senderInitial}
@@ -314,17 +307,15 @@ function ThreadMessageCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-semibold truncate">{senderName}</span>
-            <span className="text-sm text-muted-foreground truncate">
+            <span className="truncate font-semibold">{senderName}</span>
+            <span className="text-muted-foreground truncate text-sm">
               &lt;{message.from.address}&gt;
             </span>
           </div>
-          <div className="text-sm text-muted-foreground truncate">
+          <div className="text-muted-foreground truncate text-sm">
             {t.email.to}: {message.to.map((addr) => addr.name || addr.address).join(", ")}
           </div>
-          <div className="text-xs text-muted-foreground">
-            {message.receivedAt.toLocaleString()}
-          </div>
+          <div className="text-muted-foreground text-xs">{message.receivedAt.toLocaleString()}</div>
         </div>
 
         {/* Actions */}
@@ -340,10 +331,7 @@ function ThreadMessageCard({
           </Button>
           <Button variant="ghost" size="icon" onClick={onStar} title="Star">
             <Star
-              className={cn(
-                "h-4 w-4",
-                message.isStarred ? "fill-yellow-400 text-yellow-400" : ""
-              )}
+              className={cn("h-4 w-4", message.isStarred ? "fill-yellow-400 text-yellow-400" : "")}
             />
           </Button>
           <Button
@@ -363,9 +351,7 @@ function ThreadMessageCard({
         {message.body.html ? (
           <EmailHtmlContent html={message.body.html} />
         ) : (
-          <pre className="whitespace-pre-wrap font-sans text-sm">
-            {message.body.text}
-          </pre>
+          <pre className="font-sans text-sm whitespace-pre-wrap">{message.body.text}</pre>
         )}
       </div>
     </div>
@@ -391,17 +377,8 @@ export function EmailThreadView({
   const isSingleMessage = messages.length === 1;
 
   return (
-    <div
-      className={cn(
-        "h-full",
-        isSingleMessage ? "" : "overflow-y-auto"
-      )}
-    >
-      <div
-        className={cn(
-          isSingleMessage ? "h-full" : "flex flex-col gap-4"
-        )}
-      >
+    <div className={cn("h-full", isSingleMessage ? "" : "overflow-y-auto")}>
+      <div className={cn(isSingleMessage ? "h-full" : "flex flex-col gap-4")}>
         {messages.map((message, index) => (
           <ThreadMessageCard
             key={message.id}

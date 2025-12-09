@@ -12,8 +12,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope:
-            "openid email profile https://www.googleapis.com/auth/gmail.modify",
+          scope: "openid email profile https://www.googleapis.com/auth/gmail.modify",
           access_type: "offline",
           prompt: "consent",
         },
@@ -24,8 +23,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope:
-            "openid profile email offline_access Mail.ReadWrite Mail.Send",
+          scope: "openid profile email offline_access Mail.ReadWrite Mail.Send",
         },
       },
     }),

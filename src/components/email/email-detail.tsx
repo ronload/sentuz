@@ -133,9 +133,7 @@ export function EmailDetail({
           <ArrowLeft className="h-4 w-4" />
         </Button>
 
-        <h1 className="flex-1 truncate text-lg font-semibold">
-          {email.subject || "(No Subject)"}
-        </h1>
+        <h1 className="flex-1 truncate text-lg font-semibold">{email.subject || "(No Subject)"}</h1>
 
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={onReply}>
@@ -149,12 +147,7 @@ export function EmailDetail({
           </Button>
           <Button variant="ghost" size="icon" onClick={onStar}>
             <Star
-              className={cn(
-                "h-4 w-4",
-                email.isStarred
-                  ? "fill-yellow-400 text-yellow-400"
-                  : ""
-              )}
+              className={cn("h-4 w-4", email.isStarred ? "fill-yellow-400 text-yellow-400" : "")}
             />
           </Button>
           <Button
@@ -178,25 +171,17 @@ export function EmailDetail({
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-semibold">{senderName}</span>
-                <span className="text-sm text-muted-foreground">
-                  &lt;{email.from.address}&gt;
-                </span>
+                <span className="text-muted-foreground text-sm">&lt;{email.from.address}&gt;</span>
               </div>
-              <div className="text-sm text-muted-foreground">
-                {t.email.to}:{" "}
-                {email.to
-                  .map((addr) => addr.name || addr.address)
-                  .join(", ")}
+              <div className="text-muted-foreground text-sm">
+                {t.email.to}: {email.to.map((addr) => addr.name || addr.address).join(", ")}
               </div>
               {email.cc && email.cc.length > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  {t.email.cc}:{" "}
-                  {email.cc
-                    .map((addr) => addr.name || addr.address)
-                    .join(", ")}
+                <div className="text-muted-foreground text-sm">
+                  {t.email.cc}: {email.cc.map((addr) => addr.name || addr.address).join(", ")}
                 </div>
               )}
-              <div className="text-xs text-muted-foreground">
+              <div className="text-muted-foreground text-xs">
                 {email.receivedAt.toLocaleString()}
               </div>
             </div>
@@ -219,7 +204,7 @@ export function EmailDetail({
                       onClick={() => onDownloadAttachment?.(attachment.id)}
                     >
                       {attachment.name}
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         ({formatFileSize(attachment.size)})
                       </span>
                       <Download className="h-3 w-3" />
@@ -234,13 +219,9 @@ export function EmailDetail({
 
           <div className="prose prose-sm dark:prose-invert max-w-none">
             {email.body.html ? (
-              <div
-                dangerouslySetInnerHTML={{ __html: email.body.html }}
-              />
+              <div dangerouslySetInnerHTML={{ __html: email.body.html }} />
             ) : (
-              <pre className="whitespace-pre-wrap font-sans">
-                {email.body.text}
-              </pre>
+              <pre className="font-sans whitespace-pre-wrap">{email.body.text}</pre>
             )}
           </div>
         </div>

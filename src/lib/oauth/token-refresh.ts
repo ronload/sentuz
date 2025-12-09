@@ -30,22 +30,19 @@ async function refreshGoogleToken(refreshToken: string): Promise<TokenResponse> 
 }
 
 async function refreshMicrosoftToken(refreshToken: string): Promise<TokenResponse> {
-  const response = await fetch(
-    "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        client_id: process.env.MICROSOFT_CLIENT_ID!,
-        client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
-        refresh_token: refreshToken,
-        grant_type: "refresh_token",
-        scope: "openid profile email offline_access Mail.ReadWrite Mail.Send",
-      }),
-    }
-  );
+  const response = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      client_id: process.env.MICROSOFT_CLIENT_ID!,
+      client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+      scope: "openid profile email offline_access Mail.ReadWrite Mail.Send",
+    }),
+  });
 
   if (!response.ok) {
     const error = await response.text();
@@ -86,10 +83,7 @@ export async function getValidAccessToken(accountId: string): Promise<string> {
 
   if (account.provider === "google") {
     tokenResponse = await refreshGoogleToken(account.refresh_token);
-  } else if (
-    account.provider === "microsoft-entra-id" ||
-    account.provider === "azure-ad"
-  ) {
+  } else if (account.provider === "microsoft-entra-id" || account.provider === "azure-ad") {
     tokenResponse = await refreshMicrosoftToken(account.refresh_token);
   } else {
     throw new Error(`Unknown provider: ${account.provider}`);

@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { signOut } from "next-auth/react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
-import { EmailList } from "@/components/email/email-list";
+import { EmailList, type EmailViewMode, type EmailCategory } from "@/components/email/email-list";
 import { EmailThreadView } from "@/components/email/email-thread-view";
 import { ComposeDialog } from "@/components/email/compose-dialog";
 import {
@@ -36,9 +35,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const [selectedThreadId, setSelectedThreadId] = React.useState<string>();
   const [searchQuery, setSearchQuery] = React.useState<string>();
   const [composeOpen, setComposeOpen] = React.useState(false);
-  const [composeMode, setComposeMode] = React.useState<
-    "compose" | "reply" | "forward"
-  >("compose");
+  const [composeMode, setComposeMode] = React.useState<"compose" | "reply" | "forward">("compose");
   const [composeInitialData, setComposeInitialData] = React.useState<{
     to?: string[];
     cc?: string[];
@@ -46,6 +43,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
     content?: string;
   }>();
   const [replyToEmailId, setReplyToEmailId] = React.useState<string>();
+  const [emailViewMode, setEmailViewMode] = React.useState<EmailViewMode>("list");
+  const [emailCategory, setEmailCategory] = React.useState<EmailCategory>("all");
 
   const { accounts } = useAccounts();
   const { folders } = useFolders(selectedAccountId);
@@ -59,21 +58,14 @@ export function DashboardClient({ user }: DashboardClientProps) {
     accountId: selectedAccountId,
     folderId: selectedFolderId,
     query: searchQuery,
+    category: emailCategory,
   });
   const { messages: threadMessages, isLoading: threadLoading } = useEmailThread(
     selectedAccountId,
     selectedThreadId
   );
-  const {
-    markAsRead,
-    markAsUnread,
-    star,
-    unstar,
-    deleteEmail,
-    sendEmail,
-    reply,
-    forward,
-  } = useEmailActions(selectedAccountId);
+  const { markAsRead, markAsUnread, star, unstar, deleteEmail, sendEmail, reply, forward } =
+    useEmailActions(selectedAccountId);
 
   React.useEffect(() => {
     if (accounts.length > 0 && !selectedAccountId) {
@@ -138,16 +130,9 @@ export function DashboardClient({ user }: DashboardClientProps) {
     setReplyToEmailId(emailId);
     setComposeMode("reply");
     setComposeInitialData({
-      to: replyAll
-        ? [
-            email.from.address,
-            ...email.to.map((t) => t.address),
-          ]
-        : [email.from.address],
+      to: replyAll ? [email.from.address, ...email.to.map((t) => t.address)] : [email.from.address],
       cc: replyAll ? email.cc?.map((c) => c.address) : undefined,
-      subject: email.subject.startsWith("Re:")
-        ? email.subject
-        : `Re: ${email.subject}`,
+      subject: email.subject.startsWith("Re:") ? email.subject : `Re: ${email.subject}`,
       content: "",
     });
     setComposeOpen(true);
@@ -159,9 +144,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
     setReplyToEmailId(emailId);
     setComposeMode("forward");
     setComposeInitialData({
-      subject: email.subject.startsWith("Fwd:")
-        ? email.subject
-        : `Fwd: ${email.subject}`,
+      subject: email.subject.startsWith("Fwd:") ? email.subject : `Fwd: ${email.subject}`,
       content: `\n\n---------- Forwarded message ---------\nFrom: ${email.from.name || email.from.address}\nDate: ${email.receivedAt.toLocaleString()}\nSubject: ${email.subject}\nTo: ${email.to.map((t) => t.address).join(", ")}\n\n${email.body.text || ""}`,
     });
     setComposeOpen(true);
@@ -243,6 +226,10 @@ export function DashboardClient({ user }: DashboardClientProps) {
               emails={emails}
               isLoading={emailsLoading}
               selectedEmailId={selectedEmailId}
+              viewMode={emailViewMode}
+              onViewModeChange={setEmailViewMode}
+              category={emailCategory}
+              onCategoryChange={setEmailCategory}
               onSelectEmail={handleSelectEmail}
               onStarEmail={handleStarEmail}
               onMarkAsRead={handleMarkAsRead}

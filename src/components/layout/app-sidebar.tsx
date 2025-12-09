@@ -68,17 +68,15 @@ export function AppSidebar({
     <aside className="flex w-72 shrink-0 flex-col gap-4 p-4">
       {/* Account selector */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex h-12 w-full items-center gap-3 rounded-xl bg-card px-4 shadow-sm">
+        <DropdownMenuTrigger className="bg-card flex h-12 w-full items-center gap-3 rounded-xl px-4 shadow-sm">
           <Avatar className="h-8 w-8 shrink-0">
             <AvatarImage src={selectedAccount?.image} />
             <AvatarFallback className="bg-foreground text-background text-xs">
               {displayEmail[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <span className="flex-1 truncate text-left text-sm">
-            {displayEmail}
-          </span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="flex-1 truncate text-left text-sm">{displayEmail}</span>
+          <ChevronDown className="text-muted-foreground h-4 w-4 shrink-0" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
           {accounts.map((account) => (
@@ -105,86 +103,88 @@ export function AppSidebar({
       </DropdownMenu>
 
       {/* Menu items */}
-      <div className="flex-1 rounded-xl bg-card p-2 shadow-sm">
+      <div className="bg-card flex-1 rounded-xl p-2 shadow-sm">
         <nav className="space-y-1">
           <button
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-accent",
+              "hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm",
               selectedFolder === "inbox" && "bg-accent"
             )}
             onClick={() => onSelectFolder("inbox")}
           >
-            <Inbox className="h-4 w-4 text-muted-foreground" />
+            <Inbox className="text-muted-foreground h-4 w-4" />
             <span className="flex-1 text-left">{t.sidebar.inbox}</span>
-            <Kbd>⌘</Kbd><Kbd>1</Kbd>
+            <Kbd>⌘</Kbd>
+            <Kbd>1</Kbd>
           </button>
           <button
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-accent",
+              "hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm",
               selectedFolder === "starred" && "bg-accent"
             )}
             onClick={() => onSelectFolder("starred")}
           >
-            <Star className="h-4 w-4 text-muted-foreground" />
+            <Star className="text-muted-foreground h-4 w-4" />
             <span className="flex-1 text-left">{t.sidebar.starred}</span>
           </button>
           <button
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-accent",
+              "hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm",
               selectedFolder === "sent" && "bg-accent"
             )}
             onClick={() => onSelectFolder("sent")}
           >
-            <Send className="h-4 w-4 text-muted-foreground" />
+            <Send className="text-muted-foreground h-4 w-4" />
             <span className="flex-1 text-left">{t.sidebar.sent}</span>
           </button>
           <button
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-accent",
+              "hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm",
               selectedFolder === "drafts" && "bg-accent"
             )}
             onClick={() => onSelectFolder("drafts")}
           >
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="text-muted-foreground h-4 w-4" />
             <span className="flex-1 text-left">{t.sidebar.drafts}</span>
           </button>
           <button
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-accent",
+              "hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm",
               selectedFolder === "important" && "bg-accent"
             )}
             onClick={() => onSelectFolder("important")}
           >
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <AlertCircle className="text-muted-foreground h-4 w-4" />
             <span className="flex-1 text-left">{t.sidebar.important}</span>
           </button>
           <button
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-accent",
+              "hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm",
               selectedFolder === "spam" && "bg-accent"
             )}
             onClick={() => onSelectFolder("spam")}
           >
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <AlertTriangle className="text-muted-foreground h-4 w-4" />
             <span className="flex-1 text-left">{t.sidebar.spam}</span>
           </button>
           <button
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-accent",
+              "hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm",
               selectedFolder === "trash" && "bg-accent"
             )}
             onClick={() => onSelectFolder("trash")}
           >
-            <Trash2 className="h-4 w-4 text-muted-foreground" />
+            <Trash2 className="text-muted-foreground h-4 w-4" />
             <span className="flex-1 text-left">{t.sidebar.trash}</span>
           </button>
 
           {/* Settings with hover dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-accent">
-              <Settings className="h-4 w-4 text-muted-foreground" />
+            <DropdownMenuTrigger className="hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm">
+              <Settings className="text-muted-foreground h-4 w-4" />
               <span className="flex-1 text-left">{t.settings.settings}</span>
-              <Kbd>⌘</Kbd><Kbd>S</Kbd>
+              <Kbd>⌘</Kbd>
+              <Kbd>S</Kbd>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="right" className="w-48">
               <DropdownMenuSub>
@@ -213,12 +213,8 @@ export function AppSidebar({
                   <span>{t.settings.language}</span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => setLocale("en")}>
-                    English
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocale("zh")}>
-                    繁體中文
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocale("en")}>English</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocale("zh")}>繁體中文</DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             </DropdownMenuContent>

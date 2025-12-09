@@ -6,10 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export type Provider = "google" | "microsoft-entra-id";
 
-export function createEmailService(
-  provider: Provider,
-  accessToken: string
-): IEmailService {
+export function createEmailService(provider: Provider, accessToken: string): IEmailService {
   switch (provider) {
     case "google":
       return new GmailService(accessToken);
@@ -20,9 +17,7 @@ export function createEmailService(
   }
 }
 
-export async function createEmailServiceFromAccount(
-  accountId: string
-): Promise<IEmailService> {
+export async function createEmailServiceFromAccount(accountId: string): Promise<IEmailService> {
   const account = await prisma.account.findUnique({
     where: { id: accountId },
   });

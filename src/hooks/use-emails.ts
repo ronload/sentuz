@@ -49,10 +49,28 @@ export interface Account {
   image?: string | null;
 }
 
+type EmailCategory = "all" | "transaction" | "updates" | "promotions";
+
 interface UseEmailsOptions {
   accountId?: string;
   folderId?: string;
   query?: string;
+  category?: EmailCategory;
+}
+
+function buildCategoryQuery(category: EmailCategory): string | undefined {
+  switch (category) {
+    case "transaction":
+      // Search for transaction-related emails using keywords
+      return "{order receipt invoice payment confirmation shipping delivery transaction}";
+    case "updates":
+      return "category:updates";
+    case "promotions":
+      return "category:promotions";
+    case "all":
+    default:
+      return undefined;
+  }
 }
 
 export function useAccounts() {
@@ -128,7 +146,7 @@ export function useFolders(accountId?: string) {
   return { folders, isLoading, error, refetch: fetchFolders };
 }
 
-export function useEmails({ accountId, folderId, query }: UseEmailsOptions) {
+export function useEmails({ accountId, folderId, query, category = "all" }: UseEmailsOptions) {
   const [emails, setEmails] = React.useState<Email[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<Error | null>(null);
@@ -146,7 +164,12 @@ export function useEmails({ accountId, folderId, query }: UseEmailsOptions) {
       try {
         const params = new URLSearchParams({ accountId });
         if (folderId) params.set("folderId", folderId);
-        if (query) params.set("query", query);
+
+        // Combine user query with category query
+        const categoryQuery = buildCategoryQuery(category);
+        const combinedQuery = [query, categoryQuery].filter(Boolean).join(" ");
+        if (combinedQuery) params.set("query", combinedQuery);
+
         if (pageToken) params.set("pageToken", pageToken);
 
         const response = await fetch(`/api/emails?${params.toString()}`);
@@ -161,7 +184,12 @@ export function useEmails({ accountId, folderId, query }: UseEmailsOptions) {
         }));
 
         if (pageToken) {
-          setEmails((prev) => [...prev, ...parsedEmails]);
+          // Deduplicate emails when loading more
+          setEmails((prev) => {
+            const existingIds = new Set(prev.map((e) => e.id));
+            const newEmails = parsedEmails.filter((e: Email) => !existingIds.has(e.id));
+            return [...prev, ...newEmails];
+          });
         } else {
           setEmails(parsedEmails);
         }
@@ -172,7 +200,7 @@ export function useEmails({ accountId, folderId, query }: UseEmailsOptions) {
         setIsLoading(false);
       }
     },
-    [accountId, folderId, query]
+    [accountId, folderId, query, category]
   );
 
   React.useEffect(() => {
@@ -210,9 +238,7 @@ export function useEmail(accountId?: string, emailId?: string) {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `/api/emails/${emailId}?accountId=${accountId}`
-        );
+        const response = await fetch(`/api/emails/${emailId}?accountId=${accountId}`);
         if (!response.ok) {
           throw new Error("Failed to fetch email");
         }
@@ -249,9 +275,7 @@ export function useEmailThread(accountId?: string, threadId?: string) {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `/api/emails/thread/${threadId}?accountId=${accountId}`
-        );
+        const response = await fetch(`/api/emails/thread/${threadId}?accountId=${accountId}`);
         if (!response.ok) {
           throw new Error("Failed to fetch thread");
         }

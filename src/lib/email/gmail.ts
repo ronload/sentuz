@@ -78,9 +78,7 @@ export class GmailService implements IEmailService {
     }
 
     // Sort by date ascending (oldest first)
-    return messages.sort(
-      (a, b) => a.receivedAt.getTime() - b.receivedAt.getTime()
-    );
+    return messages.sort((a, b) => a.receivedAt.getTime() - b.receivedAt.getTime());
   }
 
   async sendEmail(params: SendEmailParams): Promise<{ id: string }> {
@@ -229,10 +227,7 @@ export class GmailService implements IEmailService {
     return attachments;
   }
 
-  async getAttachment(
-    emailId: string,
-    attachmentId: string
-  ): Promise<AttachmentContent> {
+  async getAttachment(emailId: string, attachmentId: string): Promise<AttachmentContent> {
     const message = await this.gmail.users.messages.get({
       userId: "me",
       id: emailId,
@@ -274,10 +269,7 @@ export class GmailService implements IEmailService {
     };
   }
 
-  async reply(
-    id: string,
-    params: ReplyEmailParams
-  ): Promise<{ id: string }> {
+  async reply(id: string, params: ReplyEmailParams): Promise<{ id: string }> {
     const original = await this.getEmail(id);
 
     const to = params.replyAll
@@ -307,10 +299,7 @@ export class GmailService implements IEmailService {
     return { id: response.data.id! };
   }
 
-  async forward(
-    id: string,
-    params: ForwardEmailParams
-  ): Promise<{ id: string }> {
+  async forward(id: string, params: ForwardEmailParams): Promise<{ id: string }> {
     const original = await this.getEmail(id);
 
     const subject = original.subject.startsWith("Fwd:")
@@ -337,9 +326,7 @@ export class GmailService implements IEmailService {
         html: original.body.html
           ? `${bodyContent}<br><br>${forwardHeader.replace(/\r\n/g, "<br>")}${originalBody}`
           : undefined,
-        text: !original.body.html
-          ? `${bodyContent}\r\n${forwardHeader}${originalBody}`
-          : undefined,
+        text: !original.body.html ? `${bodyContent}\r\n${forwardHeader}${originalBody}` : undefined,
       },
     });
 
@@ -361,9 +348,7 @@ export class GmailService implements IEmailService {
     inReplyTo: string;
   }): string {
     const toHeader = params.to
-      .map((addr) =>
-        addr.name ? `"${addr.name}" <${addr.address}>` : addr.address
-      )
+      .map((addr) => (addr.name ? `"${addr.name}" <${addr.address}>` : addr.address))
       .join(", ");
 
     const lines = [
@@ -395,9 +380,7 @@ export class GmailService implements IEmailService {
   private parseEmailListItem(data: any): EmailListItem {
     const headers = data.payload?.headers || [];
     const getHeader = (name: string) =>
-      headers.find(
-        (h: any) => h.name.toLowerCase() === name.toLowerCase()
-      )?.value;
+      headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value;
 
     return {
       id: data.id,
@@ -415,9 +398,7 @@ export class GmailService implements IEmailService {
   private parseEmailMessage(data: any): EmailMessage {
     const headers = data.payload?.headers || [];
     const getHeader = (name: string) =>
-      headers.find(
-        (h: any) => h.name.toLowerCase() === name.toLowerCase()
-      )?.value;
+      headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value;
 
     return {
       id: data.id,
@@ -467,13 +448,9 @@ export class GmailService implements IEmailService {
 
     if (payload.body?.data) {
       if (payload.mimeType === "text/html") {
-        body.html = Buffer.from(payload.body.data, "base64url").toString(
-          "utf-8"
-        );
+        body.html = Buffer.from(payload.body.data, "base64url").toString("utf-8");
       } else {
-        body.text = Buffer.from(payload.body.data, "base64url").toString(
-          "utf-8"
-        );
+        body.text = Buffer.from(payload.body.data, "base64url").toString("utf-8");
       }
     } else if (payload.parts) {
       payload.parts.forEach(extractFromPart);
@@ -500,22 +477,14 @@ export class GmailService implements IEmailService {
 
   private createRawMessage(params: SendEmailParams): string {
     const toHeader = params.to
-      .map((addr) =>
-        addr.name ? `"${addr.name}" <${addr.address}>` : addr.address
-      )
+      .map((addr) => (addr.name ? `"${addr.name}" <${addr.address}>` : addr.address))
       .join(", ");
 
-    const lines = [
-      `To: ${toHeader}`,
-      `Subject: ${params.subject}`,
-      "MIME-Version: 1.0",
-    ];
+    const lines = [`To: ${toHeader}`, `Subject: ${params.subject}`, "MIME-Version: 1.0"];
 
     if (params.cc?.length) {
       const ccHeader = params.cc
-        .map((addr) =>
-          addr.name ? `"${addr.name}" <${addr.address}>` : addr.address
-        )
+        .map((addr) => (addr.name ? `"${addr.name}" <${addr.address}>` : addr.address))
         .join(", ");
       lines.push(`Cc: ${ccHeader}`);
     }

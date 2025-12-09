@@ -2,12 +2,7 @@
 
 import * as React from "react";
 import { X, Send } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,8 +58,14 @@ export function ComposeDialog({
 
     setIsSending(true);
     try {
-      const toAddresses = to.split(",").map((addr) => addr.trim()).filter(Boolean);
-      const ccAddresses = cc.split(",").map((addr) => addr.trim()).filter(Boolean);
+      const toAddresses = to
+        .split(",")
+        .map((addr) => addr.trim())
+        .filter(Boolean);
+      const ccAddresses = cc
+        .split(",")
+        .map((addr) => addr.trim())
+        .filter(Boolean);
 
       await onSend({
         to: toAddresses,
@@ -127,7 +128,7 @@ export function ComposeDialog({
               variant="ghost"
               size="sm"
               onClick={() => setShowCc(true)}
-              className="text-xs text-muted-foreground"
+              className="text-muted-foreground text-xs"
             >
               + {t.email.cc}
             </Button>
@@ -135,11 +136,7 @@ export function ComposeDialog({
 
           <div className="space-y-2">
             <Label htmlFor="subject">{t.email.subject}</Label>
-            <Input
-              id="subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            />
+            <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
 
           <div className="space-y-2">

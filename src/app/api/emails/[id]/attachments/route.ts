@@ -4,10 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createEmailServiceFromAccount } from "@/lib/email";
 
 // GET /api/emails/[id]/attachments - List attachments
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -18,10 +15,7 @@ export async function GET(
   const accountId = request.nextUrl.searchParams.get("accountId");
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   const account = await prisma.account.findFirst({
@@ -41,9 +35,6 @@ export async function GET(
     return NextResponse.json(attachments);
   } catch (error) {
     console.error("Error listing attachments:", error);
-    return NextResponse.json(
-      { error: "Failed to list attachments" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to list attachments" }, { status: 500 });
   }
 }

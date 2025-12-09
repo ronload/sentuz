@@ -19,10 +19,7 @@ export async function GET(request: NextRequest) {
   const query = searchParams.get("query") || undefined;
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   const account = await prisma.account.findFirst({
@@ -49,10 +46,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error listing emails:", error);
-    return NextResponse.json(
-      { error: "Failed to list emails" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to list emails" }, { status: 500 });
   }
 }
 
@@ -68,17 +62,11 @@ export async function POST(request: NextRequest) {
   const { accountId, to, cc, bcc, subject, content, contentType } = body;
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   if (!to || !Array.isArray(to) || to.length === 0) {
-    return NextResponse.json(
-      { error: "At least one recipient is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "At least one recipient is required" }, { status: 400 });
   }
 
   if (!subject) {
@@ -110,18 +98,12 @@ export async function POST(request: NextRequest) {
         typeof addr === "string" ? { address: addr } : addr
       ),
       subject,
-      body:
-        contentType === "html"
-          ? { html: content }
-          : { text: content },
+      body: contentType === "html" ? { html: content } : { text: content },
     });
 
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error sending email:", error);
-    return NextResponse.json(
-      { error: "Failed to send email" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
   }
 }

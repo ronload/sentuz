@@ -4,10 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createEmailServiceFromAccount } from "@/lib/email";
 
 // POST /api/emails/[id]/reply - Reply to email
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -19,17 +16,11 @@ export async function POST(
   const { accountId, content, contentType, replyAll } = body;
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   if (!content) {
-    return NextResponse.json(
-      { error: "content is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
   const account = await prisma.account.findFirst({
@@ -47,17 +38,13 @@ export async function POST(
     const emailService = await createEmailServiceFromAccount(accountId);
 
     const result = await emailService.reply(id, {
-      body:
-        contentType === "html" ? { html: content } : { text: content },
+      body: contentType === "html" ? { html: content } : { text: content },
       replyAll: replyAll || false,
     });
 
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error replying to email:", error);
-    return NextResponse.json(
-      { error: "Failed to reply to email" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to reply to email" }, { status: 500 });
   }
 }

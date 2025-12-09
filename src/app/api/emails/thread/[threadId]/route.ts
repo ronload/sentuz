@@ -9,10 +9,7 @@ export async function GET(
   const accountId = request.nextUrl.searchParams.get("accountId");
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   try {
@@ -22,9 +19,6 @@ export async function GET(
     return NextResponse.json({ messages });
   } catch (error) {
     console.error("Failed to fetch thread:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch thread" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch thread" }, { status: 500 });
   }
 }

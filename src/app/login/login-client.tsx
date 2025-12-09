@@ -4,13 +4,7 @@ import * as React from "react";
 import { signIn } from "next-auth/react";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useI18n } from "@/lib/i18n";
@@ -40,8 +34,8 @@ export function LoginClient() {
       <main className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-              <Mail className="h-6 w-6 text-primary-foreground" />
+            <div className="bg-primary mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+              <Mail className="text-primary-foreground h-6 w-6" />
             </div>
             <CardTitle className="text-2xl">Sentuz</CardTitle>
             <CardDescription>{t.auth.connectAccounts}</CardDescription>
@@ -72,9 +66,7 @@ export function LoginClient() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              {isLoading === "google"
-                ? t.common.loading
-                : `${t.auth.signInWith} Google`}
+              {isLoading === "google" ? t.common.loading : `${t.auth.signInWith} Google`}
             </Button>
 
             <Button

@@ -14,10 +14,7 @@ export async function GET(request: NextRequest) {
   const accountId = request.nextUrl.searchParams.get("accountId");
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   const account = await prisma.account.findFirst({
@@ -37,9 +34,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(folders);
   } catch (error) {
     console.error("Error listing folders:", error);
-    return NextResponse.json(
-      { error: "Failed to list folders" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to list folders" }, { status: 500 });
   }
 }

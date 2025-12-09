@@ -4,10 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createEmailServiceFromAccount } from "@/lib/email";
 
 // GET /api/emails/[id] - Get single email
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -18,10 +15,7 @@ export async function GET(
   const accountId = request.nextUrl.searchParams.get("accountId");
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   const account = await prisma.account.findFirst({
@@ -41,18 +35,12 @@ export async function GET(
     return NextResponse.json(email);
   } catch (error) {
     console.error("Error getting email:", error);
-    return NextResponse.json(
-      { error: "Failed to get email" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get email" }, { status: 500 });
   }
 }
 
 // PATCH /api/emails/[id] - Update email (mark as read/unread, star/unstar)
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -64,10 +52,7 @@ export async function PATCH(
   const { accountId, isRead, isStarred } = body;
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   const account = await prisma.account.findFirst({
@@ -103,10 +88,7 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error updating email:", error);
-    return NextResponse.json(
-      { error: "Failed to update email" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update email" }, { status: 500 });
   }
 }
 
@@ -125,10 +107,7 @@ export async function DELETE(
   const accountId = request.nextUrl.searchParams.get("accountId");
 
   if (!accountId) {
-    return NextResponse.json(
-      { error: "accountId is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "accountId is required" }, { status: 400 });
   }
 
   const account = await prisma.account.findFirst({
@@ -148,9 +127,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting email:", error);
-    return NextResponse.json(
-      { error: "Failed to delete email" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete email" }, { status: 500 });
   }
 }
