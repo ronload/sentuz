@@ -23,6 +23,7 @@ export interface Email {
   isRead: boolean;
   isStarred: boolean;
   hasAttachments: boolean;
+  unsubscribeUrl?: string;
 }
 
 interface EmailListProps {
@@ -40,6 +41,8 @@ interface EmailListProps {
   onDeleteEmail?: (emailId: string) => void;
   onReplyEmail?: (emailId: string) => void;
   onForwardEmail?: (emailId: string) => void;
+  onUnsubscribeEmail?: (email: Email) => void;
+  unsubscribedIds?: Set<string>;
   onLoadMore?: () => void;
   hasMore?: boolean;
   currentAccountEmail?: string;
@@ -185,6 +188,8 @@ export function EmailList({
   onDeleteEmail,
   onReplyEmail,
   onForwardEmail,
+  onUnsubscribeEmail,
+  unsubscribedIds,
   onLoadMore,
   hasMore,
   currentAccountEmail,
@@ -256,6 +261,8 @@ export function EmailList({
               isSelected={selectedEmailId === email.id}
               currentAccountEmail={currentAccountEmail}
               currentAccountImage={currentAccountImage}
+              unsubscribeUrl={email.unsubscribeUrl}
+              isUnsubscribed={unsubscribedIds?.has(email.id)}
               onClick={() => onSelectEmail?.(email)}
               onStar={() => onStarEmail?.(email.id, !email.isStarred)}
               onMarkAsRead={() => onMarkAsRead?.(email.id)}
@@ -263,6 +270,7 @@ export function EmailList({
               onDelete={() => onDeleteEmail?.(email.id)}
               onReply={() => onReplyEmail?.(email.id)}
               onForward={() => onForwardEmail?.(email.id)}
+              onUnsubscribe={() => onUnsubscribeEmail?.(email)}
             />
           ))}
           {isLoading && (

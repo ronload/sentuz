@@ -4,6 +4,7 @@ import * as React from "react";
 import NextImage from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 // Common personal email domains that won't have company logos
 const PERSONAL_EMAIL_DOMAINS = new Set([
@@ -64,6 +65,26 @@ function getRootDomain(domain: string): string {
   return parts.slice(-2).join(".");
 }
 
+// Format date relative to now (e.g., "10:30 AM", "Yesterday", "Mon", "Dec 5")
+function formatRelativeDate(date: Date): string {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days === 0) {
+    // Today: show time
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  } else if (days === 1) {
+    return "Yesterday";
+  } else if (days < 7) {
+    // This week: show day name
+    return date.toLocaleDateString([], { weekday: "short" });
+  } else {
+    // Older: show date
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+}
+
 // Get company logo URL using Google Favicon API (free, no CORS, high coverage)
 function getCompanyLogoUrl(email: string): string | null {
   const domain = getEmailDomain(email);
@@ -93,6 +114,8 @@ export interface EmailCardProps {
   isSelected?: boolean;
   currentAccountEmail?: string;
   currentAccountImage?: string;
+  unsubscribeUrl?: string;
+  isUnsubscribed?: boolean;
   onClick?: () => void;
   onStar?: () => void;
   onMarkAsRead?: () => void;
@@ -100,18 +123,24 @@ export interface EmailCardProps {
   onDelete?: () => void;
   onReply?: () => void;
   onForward?: () => void;
+  onUnsubscribe?: () => void;
 }
 
 export function EmailCard({
   subject,
   from,
   snippet,
+  receivedAt,
   isRead,
   isSelected,
   currentAccountEmail,
   currentAccountImage,
+  unsubscribeUrl,
+  isUnsubscribed,
   onClick,
+  onUnsubscribe,
 }: EmailCardProps) {
+  const { t } = useI18n();
   const senderName = from.name || from.address.split("@")[0];
   const title = subject || "(No Subject)";
   const initial = (from.name || from.address)[0]?.toUpperCase() || "?";
@@ -203,14 +232,62 @@ export function EmailCard({
       </div>
       <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
         <div
-          className={cn("text-sm", !isRead && "font-semibold")}
-          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "8px",
+          }}
         >
-          {senderName}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flex: 1,
+              minWidth: 0,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              className={cn("text-sm", !isRead && "font-semibold")}
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {senderName}
+            </div>
+            {unsubscribeUrl && !isUnsubscribed && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUnsubscribe?.();
+                }}
+                className="text-muted-foreground hover:text-foreground shrink-0 text-xs underline"
+              >
+                {t.email.unsubscribe}
+              </button>
+            )}
+            {isUnsubscribed && (
+              <span className="text-muted-foreground/50 shrink-0 text-xs">
+                {t.email.unsubscribed}
+              </span>
+            )}
+          </div>
+          <div className="text-muted-foreground shrink-0 text-xs">
+            {formatRelativeDate(receivedAt)}
+          </div>
         </div>
         <div
           className={cn("text-sm", isRead ? "text-muted-foreground" : "font-medium")}
-          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
         >
           {title}
         </div>

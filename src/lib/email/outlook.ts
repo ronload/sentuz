@@ -30,6 +30,11 @@ interface OutlookBody {
   content: string;
 }
 
+interface OutlookInternetMessageHeader {
+  name: string;
+  value: string;
+}
+
 interface OutlookMessageData {
   id: string;
   conversationId?: string;
@@ -45,6 +50,7 @@ interface OutlookMessageData {
   flag?: OutlookFlag;
   hasAttachments?: boolean;
   parentFolderId?: string;
+  internetMessageHeaders?: OutlookInternetMessageHeader[];
 }
 
 interface OutlookFolderData {
@@ -104,7 +110,7 @@ export class OutlookService implements IEmailService {
 
     queryParams.set(
       "$select",
-      "id,subject,from,receivedDateTime,bodyPreview,isRead,flag,hasAttachments,conversationId"
+      "id,subject,from,receivedDateTime,bodyPreview,isRead,flag,hasAttachments,conversationId,internetMessageHeaders"
     );
     queryParams.set("$orderby", "receivedDateTime desc");
     queryParams.set("$top", String(params.maxResults || 20));
@@ -321,6 +327,13 @@ export class OutlookService implements IEmailService {
   }
 
   private parseEmailListItem(data: OutlookMessageData): EmailListItem {
+    const unsubscribeHeader = data.internetMessageHeaders?.find(
+      (h) => h.name.toLowerCase() === "list-unsubscribe"
+    );
+    const unsubscribeUrl = unsubscribeHeader
+      ? this.parseUnsubscribeUrl(unsubscribeHeader.value)
+      : undefined;
+
     return {
       id: data.id,
       threadId: data.conversationId,
@@ -334,7 +347,18 @@ export class OutlookService implements IEmailService {
       isRead: data.isRead || false,
       isStarred: data.flag?.flagStatus === "flagged",
       hasAttachments: data.hasAttachments || false,
+      unsubscribeUrl,
     };
+  }
+
+  private parseUnsubscribeUrl(header: string): string | undefined {
+    const urlMatch = header.match(/<(https?:\/\/[^>]+)>/);
+    if (urlMatch) return urlMatch[1];
+
+    const mailtoMatch = header.match(/<(mailto:[^>]+)>/);
+    if (mailtoMatch) return mailtoMatch[1];
+
+    return undefined;
   }
 
   private parseEmailMessage(data: OutlookMessageData): EmailMessage {

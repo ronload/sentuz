@@ -33,6 +33,7 @@ export interface EmailListItem {
   isRead: boolean;
   isStarred: boolean;
   hasAttachments: boolean;
+  unsubscribeUrl?: string;
 }
 
 export interface EmailFolder {

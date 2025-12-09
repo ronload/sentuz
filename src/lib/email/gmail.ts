@@ -70,12 +70,12 @@ export class GmailService implements IEmailService {
     }
 
     // Parallel fetch all email details for better performance
+    // Using format: "full" to get all headers including List-Unsubscribe
     const detailPromises = response.data.messages.map((msg) =>
       this.gmail.users.messages.get({
         userId: "me",
         id: msg.id!,
-        format: "metadata",
-        metadataHeaders: ["From", "Subject", "Date"],
+        format: "full",
       })
     );
 
@@ -417,6 +417,11 @@ export class GmailService implements IEmailService {
     const getHeader = (name: string) =>
       headers.find((h: GmailHeader) => h.name?.toLowerCase() === name.toLowerCase())?.value;
 
+    const unsubscribeHeader = getHeader("List-Unsubscribe");
+    const unsubscribeUrl = unsubscribeHeader
+      ? this.parseUnsubscribeUrl(unsubscribeHeader)
+      : undefined;
+
     return {
       id: data.id || "",
       threadId: data.threadId || undefined,
@@ -427,7 +432,20 @@ export class GmailService implements IEmailService {
       isRead: !data.labelIds?.includes("UNREAD"),
       isStarred: data.labelIds?.includes("STARRED") || false,
       hasAttachments: this.checkHasAttachments(data.payload),
+      unsubscribeUrl,
     };
+  }
+
+  private parseUnsubscribeUrl(header: string): string | undefined {
+    // Header format: <https://example.com/unsubscribe>, <mailto:unsubscribe@example.com>
+    // Prefer https URL over mailto
+    const urlMatch = header.match(/<(https?:\/\/[^>]+)>/);
+    if (urlMatch) return urlMatch[1];
+
+    const mailtoMatch = header.match(/<(mailto:[^>]+)>/);
+    if (mailtoMatch) return mailtoMatch[1];
+
+    return undefined;
   }
 
   private parseEmailMessage(data: GmailMessageData): EmailMessage {

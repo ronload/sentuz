@@ -17,6 +17,7 @@ interface InitialDataResponse {
       isRead: boolean;
       isStarred: boolean;
       hasAttachments: boolean;
+      unsubscribeUrl?: string;
     }>;
     nextPageToken?: string;
   };

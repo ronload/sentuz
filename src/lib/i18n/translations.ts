@@ -55,6 +55,10 @@ export const translations = {
       subject: "Subject",
       attachments: "Attachments",
       send: "Send",
+      unsubscribe: "Unsubscribe",
+      unsubscribeConfirmTitle: "Confirm Unsubscribe",
+      unsubscribeConfirmMessage: "Are you sure you want to unsubscribe from this mailing list?",
+      unsubscribed: "Unsubscribed",
     },
     settings: {
       settings: "Settings",
@@ -121,6 +125,10 @@ export const translations = {
       subject: "主旨",
       attachments: "附件",
       send: "傳送",
+      unsubscribe: "取消訂閱",
+      unsubscribeConfirmTitle: "確認取消訂閱",
+      unsubscribeConfirmMessage: "確定要取消訂閱此郵件列表嗎？",
+      unsubscribed: "已取消訂閱",
     },
     settings: {
       settings: "設定",

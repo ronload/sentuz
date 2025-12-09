@@ -3,11 +3,26 @@
 import * as React from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
-import { EmailList, type EmailViewMode, type EmailCategory } from "@/components/email/email-list";
+import {
+  EmailList,
+  type EmailViewMode,
+  type EmailCategory,
+  type Email,
+} from "@/components/email/email-list";
 import { EmailThreadView } from "@/components/email/email-thread-view";
 import { ComposeDialog } from "@/components/email/compose-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useFolders, useEmails, useEmailThread, useEmailActions } from "@/hooks/use-emails";
 import { useInitialData } from "@/hooks/use-initial-data";
+import { useI18n } from "@/lib/i18n";
 
 interface User {
   id: string;
@@ -21,6 +36,7 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({ user }: DashboardClientProps) {
+  const { t } = useI18n();
   const [selectedAccountId, setSelectedAccountId] = React.useState<string>();
   const [selectedFolderId, setSelectedFolderId] = React.useState<string>();
   const [selectedFolderType, setSelectedFolderType] = React.useState<
@@ -40,6 +56,14 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const [replyToEmailId, setReplyToEmailId] = React.useState<string>();
   const [emailViewMode, setEmailViewMode] = React.useState<EmailViewMode>("list");
   const [emailCategory, setEmailCategory] = React.useState<EmailCategory>("all");
+
+  // Unsubscribe state
+  const [unsubscribeDialogOpen, setUnsubscribeDialogOpen] = React.useState(false);
+  const [pendingUnsubscribe, setPendingUnsubscribe] = React.useState<{
+    id: string;
+    url: string;
+  } | null>(null);
+  const [unsubscribedIds, setUnsubscribedIds] = React.useState<Set<string>>(new Set());
 
   // Track if we should use initial data or fetch new data
   const [useInitialEmails, setUseInitialEmails] = React.useState(true);
@@ -241,6 +265,24 @@ export function DashboardClient({ user }: DashboardClientProps) {
     setEmailCategory(category);
   };
 
+  const handleUnsubscribe = (email: Email) => {
+    if (email.unsubscribeUrl) {
+      setPendingUnsubscribe({ id: email.id, url: email.unsubscribeUrl });
+      setUnsubscribeDialogOpen(true);
+    }
+  };
+
+  const confirmUnsubscribe = () => {
+    if (pendingUnsubscribe) {
+      // Open unsubscribe URL in new tab
+      window.open(pendingUnsubscribe.url, "_blank");
+      // Mark as unsubscribed locally
+      setUnsubscribedIds((prev) => new Set([...prev, pendingUnsubscribe.id]));
+    }
+    setUnsubscribeDialogOpen(false);
+    setPendingUnsubscribe(null);
+  };
+
   const accountsWithEmail = accounts.map((acc) => ({
     id: acc.id,
     email: acc.email || user.email || acc.providerAccountId,
@@ -305,6 +347,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
               onMarkAsRead={handleMarkAsRead}
               onMarkAsUnread={handleMarkAsUnread}
               onDeleteEmail={handleDeleteEmail}
+              onUnsubscribeEmail={handleUnsubscribe}
+              unsubscribedIds={unsubscribedIds}
               onLoadMore={loadMore}
               hasMore={hasMore}
               currentAccountEmail={selectedAccount?.email}
@@ -340,6 +384,22 @@ export function DashboardClient({ user }: DashboardClientProps) {
         initialData={composeInitialData}
         mode={composeMode}
       />
+
+      {/* Unsubscribe confirmation dialog */}
+      <Dialog open={unsubscribeDialogOpen} onOpenChange={setUnsubscribeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t.email.unsubscribeConfirmTitle}</DialogTitle>
+            <DialogDescription>{t.email.unsubscribeConfirmMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUnsubscribeDialogOpen(false)}>
+              {t.common.cancel}
+            </Button>
+            <Button onClick={confirmUnsubscribe}>{t.common.confirm}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -15,6 +15,7 @@ export interface Email {
   isRead: boolean;
   isStarred: boolean;
   hasAttachments: boolean;
+  unsubscribeUrl?: string;
 }
 
 export interface EmailDetail extends Email {
@@ -64,6 +65,7 @@ interface RawEmailData {
   isRead: boolean;
   isStarred: boolean;
   hasAttachments: boolean;
+  unsubscribeUrl?: string;
 }
 
 interface UseEmailsOptions {
@@ -166,7 +168,13 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<Error | null>(null);
   const [nextPageToken, setNextPageToken] = React.useState<string | null>(null);
-  const [hasInitialized, setHasInitialized] = React.useState(false);
+
+  // Track the params key of the last successful load (synchronous approach)
+  const [loadedParamsKey, setLoadedParamsKey] = React.useState<string | null>(null);
+
+  // Calculate current params key synchronously during render
+  // This allows immediate detection of param changes without waiting for useEffect
+  const currentParamsKey = `${accountId ?? ""}-${folderId ?? ""}-${query ?? ""}-${category}`;
 
   const fetchEmails = React.useCallback(
     async (pageToken?: string) => {
@@ -175,6 +183,12 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
       if (!accountId || !folderId) {
         setEmails([]);
         return;
+      }
+
+      // Clear emails when starting a new fetch (not when loading more)
+      // This ensures skeleton shows during folder/category switches
+      if (!pageToken) {
+        setEmails([]);
       }
 
       setIsLoading(true);
@@ -216,16 +230,12 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
         setError(err instanceof Error ? err : new Error("Unknown error"));
       } finally {
         setIsLoading(false);
-        setHasInitialized(true);
+        // Mark this params combination as successfully loaded
+        setLoadedParamsKey(`${accountId ?? ""}-${folderId ?? ""}-${query ?? ""}-${category}`);
       }
     },
     [accountId, folderId, query, category]
   );
-
-  // Reset initialization state when account or folder changes
-  React.useEffect(() => {
-    setHasInitialized(false);
-  }, [accountId, folderId]);
 
   React.useEffect(() => {
     fetchEmails();
@@ -268,9 +278,9 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
 
   return {
     emails,
-    // Show loading state until first successful load completes
-    // This prevents flash of EmptyState during initial folder selection
-    isLoading: isLoading || !hasInitialized,
+    // Show loading if actively loading OR if current params don't match last loaded params
+    // This is synchronous - param changes are detected immediately during render
+    isLoading: isLoading || currentParamsKey !== loadedParamsKey,
     error,
     hasMore: !!nextPageToken,
     loadMore,
