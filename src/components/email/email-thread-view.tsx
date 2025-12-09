@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import NextImage from "next/image";
 import { Mail, Reply, ReplyAll, Forward, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -199,6 +200,8 @@ interface EmailMessage {
 interface EmailThreadViewProps {
   messages: EmailMessage[];
   isLoading?: boolean;
+  currentAccountEmail?: string;
+  currentAccountImage?: string;
   onReply?: (emailId: string, replyAll?: boolean) => void;
   onForward?: (emailId: string) => void;
   onStar?: (emailId: string) => void;
@@ -245,6 +248,8 @@ function ThreadSkeleton() {
 interface ThreadMessageCardProps {
   message: EmailMessage;
   isFullHeight?: boolean;
+  currentAccountEmail?: string;
+  currentAccountImage?: string;
   onReply?: () => void;
   onReplyAll?: () => void;
   onForward?: () => void;
@@ -255,6 +260,8 @@ interface ThreadMessageCardProps {
 function ThreadMessageCard({
   message,
   isFullHeight,
+  currentAccountEmail,
+  currentAccountImage,
   onReply,
   onReplyAll,
   onForward,
@@ -265,7 +272,13 @@ function ThreadMessageCard({
   const senderName = message.from.name || message.from.address.split("@")[0];
   const senderInitial = senderName[0]?.toUpperCase() || "?";
   const avatarColor = stringToHslColor(message.from.address);
-  const logoUrl = getCompanyLogoUrl(message.from.address);
+
+  // Check if the email is from the current user
+  const isCurrentUser =
+    currentAccountEmail && message.from.address.toLowerCase() === currentAccountEmail.toLowerCase();
+
+  // Only fetch company logo if not current user
+  const logoUrl = isCurrentUser ? null : getCompanyLogoUrl(message.from.address);
 
   const [logoStatus, setLogoStatus] = React.useState<"loading" | "loaded" | "error">(
     logoUrl ? "loading" : "error"
@@ -279,7 +292,15 @@ function ThreadMessageCard({
 
     setLogoStatus("loading");
     const img = new Image();
-    img.onload = () => setLogoStatus("loaded");
+    img.onload = () => {
+      // Google Favicon API returns a small default icon (16x16) when no favicon exists
+      // Real company logos are typically larger, so reject small images
+      if (img.naturalWidth <= 16 || img.naturalHeight <= 16) {
+        setLogoStatus("error");
+      } else {
+        setLogoStatus("loaded");
+      }
+    };
     img.onerror = () => setLogoStatus("error");
     img.src = logoUrl;
   }, [logoUrl]);
@@ -289,11 +310,23 @@ function ThreadMessageCard({
       {/* Header */}
       <div className="flex items-start gap-4 border-b p-4">
         <Avatar className="h-10 w-10 shrink-0">
-          {logoStatus === "loaded" && logoUrl ? (
-            <img
+          {isCurrentUser && currentAccountImage ? (
+            <NextImage
+              src={currentAccountImage}
+              alt={senderName}
+              width={40}
+              height={40}
+              className="aspect-square size-full object-cover"
+              unoptimized
+            />
+          ) : logoStatus === "loaded" && logoUrl ? (
+            <NextImage
               src={logoUrl}
               alt={senderName}
+              width={40}
+              height={40}
               className="aspect-square size-full object-contain"
+              unoptimized
             />
           ) : (
             <AvatarFallback
@@ -361,6 +394,8 @@ function ThreadMessageCard({
 export function EmailThreadView({
   messages,
   isLoading,
+  currentAccountEmail,
+  currentAccountImage,
   onReply,
   onForward,
   onStar,
@@ -384,6 +419,8 @@ export function EmailThreadView({
             key={message.id}
             message={message}
             isFullHeight={isSingleMessage}
+            currentAccountEmail={currentAccountEmail}
+            currentAccountImage={currentAccountImage}
             onReply={() => onReply?.(message.id, false)}
             onReplyAll={() => onReply?.(message.id, true)}
             onForward={() => onForward?.(message.id)}

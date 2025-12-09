@@ -42,6 +42,8 @@ interface EmailListProps {
   onForwardEmail?: (emailId: string) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  currentAccountEmail?: string;
+  currentAccountImage?: string;
 }
 
 const CATEGORIES: { value: EmailCategory; label: string }[] = [
@@ -129,16 +131,24 @@ function ViewModeToggle({
   );
 }
 
+function EmailCardSkeleton() {
+  return (
+    <div className="bg-card flex items-center gap-4 rounded-xl px-4 py-4 shadow-sm">
+      <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-3 w-full max-w-[280px]" />
+      </div>
+    </div>
+  );
+}
+
 function EmailListSkeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="bg-card flex h-16 items-center justify-center rounded-xl px-6 shadow-sm"
-        >
-          <Skeleton className="h-4 w-24" />
-        </div>
+        <EmailCardSkeleton key={i} />
       ))}
     </div>
   );
@@ -177,6 +187,8 @@ export function EmailList({
   onForwardEmail,
   onLoadMore,
   hasMore,
+  currentAccountEmail,
+  currentAccountImage,
 }: EmailListProps) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -242,6 +254,8 @@ export function EmailList({
               isStarred={email.isStarred}
               hasAttachments={email.hasAttachments}
               isSelected={selectedEmailId === email.id}
+              currentAccountEmail={currentAccountEmail}
+              currentAccountImage={currentAccountImage}
               onClick={() => onSelectEmail?.(email)}
               onStar={() => onStarEmail?.(email.id, !email.isStarred)}
               onMarkAsRead={() => onMarkAsRead?.(email.id)}

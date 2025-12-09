@@ -4,6 +4,11 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
+interface ProfileWithPicture {
+  picture?: string;
+  image?: string;
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -45,7 +50,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       // Get profile picture from Google or Microsoft
-      const profilePicture = (profile as any)?.picture || (profile as any)?.image;
+      const profilePicture =
+        (profile as ProfileWithPicture)?.picture || (profile as ProfileWithPicture)?.image;
       if (profilePicture) {
         updateData.image = profilePicture;
       }

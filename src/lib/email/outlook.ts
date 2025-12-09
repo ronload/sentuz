@@ -12,6 +12,61 @@ import type {
   ForwardEmailParams,
 } from "./types";
 
+interface OutlookEmailAddress {
+  name?: string;
+  address: string;
+}
+
+interface OutlookRecipient {
+  emailAddress: OutlookEmailAddress;
+}
+
+interface OutlookFlag {
+  flagStatus: string;
+}
+
+interface OutlookBody {
+  contentType: string;
+  content: string;
+}
+
+interface OutlookMessageData {
+  id: string;
+  conversationId?: string;
+  subject?: string;
+  from?: OutlookRecipient;
+  toRecipients?: OutlookRecipient[];
+  ccRecipients?: OutlookRecipient[];
+  bccRecipients?: OutlookRecipient[];
+  body?: OutlookBody;
+  bodyPreview?: string;
+  receivedDateTime: string;
+  isRead?: boolean;
+  flag?: OutlookFlag;
+  hasAttachments?: boolean;
+  parentFolderId?: string;
+}
+
+interface OutlookFolderData {
+  id: string;
+  displayName: string;
+  totalItemCount?: number;
+  unreadItemCount?: number;
+}
+
+interface OutlookAttachmentData {
+  id: string;
+  name: string;
+  contentType?: string;
+  size?: number;
+  contentBytes?: string;
+}
+
+interface OutlookListResponse<T> {
+  value: T[];
+  "@odata.nextLink"?: string;
+}
+
 const GRAPH_API_BASE = "https://graph.microsoft.com/v1.0";
 
 export class OutlookService implements IEmailService {
@@ -63,14 +118,16 @@ export class OutlookService implements IEmailService {
     }
 
     if (params.pageToken) {
-      const response = await this.fetch<any>(params.pageToken);
+      const response = await this.fetch<OutlookListResponse<OutlookMessageData>>(params.pageToken);
       return {
         messages: response.value.map(this.parseEmailListItem),
         nextPageToken: response["@odata.nextLink"],
       };
     }
 
-    const response = await this.fetch<any>(`${endpoint}?${queryParams.toString()}`);
+    const response = await this.fetch<OutlookListResponse<OutlookMessageData>>(
+      `${endpoint}?${queryParams.toString()}`
+    );
 
     return {
       messages: response.value.map(this.parseEmailListItem),
@@ -79,7 +136,7 @@ export class OutlookService implements IEmailService {
   }
 
   async getEmail(id: string): Promise<EmailMessage> {
-    const response = await this.fetch<any>(
+    const response = await this.fetch<OutlookMessageData>(
       `/me/messages/${id}?$select=id,subject,body,from,toRecipients,ccRecipients,bccRecipients,receivedDateTime,isRead,flag,hasAttachments,conversationId,bodyPreview`
     );
 
@@ -89,11 +146,11 @@ export class OutlookService implements IEmailService {
   async getThread(threadId: string): Promise<EmailMessage[]> {
     // Microsoft Graph uses conversationId for threads
     // We need to fetch all messages with the same conversationId
-    const response = await this.fetch<any>(
+    const response = await this.fetch<OutlookListResponse<OutlookMessageData>>(
       `/me/messages?$filter=conversationId eq '${threadId}'&$select=id,subject,body,from,toRecipients,ccRecipients,bccRecipients,receivedDateTime,isRead,flag,hasAttachments,conversationId,bodyPreview&$orderby=receivedDateTime asc`
     );
 
-    return response.value.map((msg: any) => this.parseEmailMessage(msg));
+    return response.value.map((msg: OutlookMessageData) => this.parseEmailMessage(msg));
   }
 
   async sendEmail(params: SendEmailParams): Promise<{ id: string }> {
@@ -173,7 +230,7 @@ export class OutlookService implements IEmailService {
   }
 
   async listFolders(): Promise<EmailFolder[]> {
-    const response = await this.fetch<any>(
+    const response = await this.fetch<OutlookListResponse<OutlookFolderData>>(
       "/me/mailFolders?$select=id,displayName,totalItemCount,unreadItemCount"
     );
 
@@ -185,7 +242,7 @@ export class OutlookService implements IEmailService {
       junkemail: "spam",
     };
 
-    return response.value.map((folder: any) => ({
+    return response.value.map((folder: OutlookFolderData) => ({
       id: folder.id,
       name: folder.displayName,
       type: folderTypeMap[folder.displayName.toLowerCase()] || "custom",
@@ -202,11 +259,11 @@ export class OutlookService implements IEmailService {
   }
 
   async listAttachments(id: string): Promise<Attachment[]> {
-    const response = await this.fetch<any>(
+    const response = await this.fetch<OutlookListResponse<OutlookAttachmentData>>(
       `/me/messages/${id}/attachments?$select=id,name,contentType,size`
     );
 
-    return response.value.map((att: any) => ({
+    return response.value.map((att: OutlookAttachmentData) => ({
       id: att.id,
       name: att.name,
       contentType: att.contentType || "application/octet-stream",
@@ -215,7 +272,9 @@ export class OutlookService implements IEmailService {
   }
 
   async getAttachment(emailId: string, attachmentId: string): Promise<AttachmentContent> {
-    const response = await this.fetch<any>(`/me/messages/${emailId}/attachments/${attachmentId}`);
+    const response = await this.fetch<OutlookAttachmentData>(
+      `/me/messages/${emailId}/attachments/${attachmentId}`
+    );
 
     return {
       id: response.id,
@@ -261,7 +320,7 @@ export class OutlookService implements IEmailService {
     return { id: "sent" };
   }
 
-  private parseEmailListItem(data: any): EmailListItem {
+  private parseEmailListItem(data: OutlookMessageData): EmailListItem {
     return {
       id: data.id,
       threadId: data.conversationId,
@@ -278,7 +337,7 @@ export class OutlookService implements IEmailService {
     };
   }
 
-  private parseEmailMessage(data: any): EmailMessage {
+  private parseEmailMessage(data: OutlookMessageData): EmailMessage {
     return {
       id: data.id,
       threadId: data.conversationId,
@@ -288,17 +347,17 @@ export class OutlookService implements IEmailService {
         address: data.from?.emailAddress?.address || "",
       },
       to:
-        data.toRecipients?.map((r: any) => ({
+        data.toRecipients?.map((r: OutlookRecipient) => ({
           name: r.emailAddress?.name,
           address: r.emailAddress?.address || "",
         })) || [],
       cc:
-        data.ccRecipients?.map((r: any) => ({
+        data.ccRecipients?.map((r: OutlookRecipient) => ({
           name: r.emailAddress?.name,
           address: r.emailAddress?.address || "",
         })) || [],
       bcc:
-        data.bccRecipients?.map((r: any) => ({
+        data.bccRecipients?.map((r: OutlookRecipient) => ({
           name: r.emailAddress?.name,
           address: r.emailAddress?.address || "",
         })) || [],
@@ -311,7 +370,7 @@ export class OutlookService implements IEmailService {
       isRead: data.isRead || false,
       isStarred: data.flag?.flagStatus === "flagged",
       hasAttachments: data.hasAttachments || false,
-      labels: [data.parentFolderId],
+      labels: data.parentFolderId ? [data.parentFolderId] : [],
     };
   }
 }

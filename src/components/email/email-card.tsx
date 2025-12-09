@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import NextImage from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -90,6 +91,8 @@ export interface EmailCardProps {
   isStarred: boolean;
   hasAttachments: boolean;
   isSelected?: boolean;
+  currentAccountEmail?: string;
+  currentAccountImage?: string;
   onClick?: () => void;
   onStar?: () => void;
   onMarkAsRead?: () => void;
@@ -99,12 +102,27 @@ export interface EmailCardProps {
   onForward?: () => void;
 }
 
-export function EmailCard({ subject, from, snippet, isRead, isSelected, onClick }: EmailCardProps) {
+export function EmailCard({
+  subject,
+  from,
+  snippet,
+  isRead,
+  isSelected,
+  currentAccountEmail,
+  currentAccountImage,
+  onClick,
+}: EmailCardProps) {
   const senderName = from.name || from.address.split("@")[0];
   const title = subject || "(No Subject)";
   const initial = (from.name || from.address)[0]?.toUpperCase() || "?";
   const avatarColor = stringToHslColor(from.address);
-  const logoUrl = getCompanyLogoUrl(from.address);
+
+  // Check if the email is from the current user
+  const isCurrentUser =
+    currentAccountEmail && from.address.toLowerCase() === currentAccountEmail.toLowerCase();
+
+  // Only fetch company logo if not current user
+  const logoUrl = isCurrentUser ? null : getCompanyLogoUrl(from.address);
 
   const [logoStatus, setLogoStatus] = React.useState<"loading" | "loaded" | "error">(
     logoUrl ? "loading" : "error"
@@ -118,7 +136,15 @@ export function EmailCard({ subject, from, snippet, isRead, isSelected, onClick 
 
     setLogoStatus("loading");
     const img = new Image();
-    img.onload = () => setLogoStatus("loaded");
+    img.onload = () => {
+      // Google Favicon API returns a small default icon (16x16) when no favicon exists
+      // Real company logos are typically larger, so reject small images
+      if (img.naturalWidth <= 16 || img.naturalHeight <= 16) {
+        setLogoStatus("error");
+      } else {
+        setLogoStatus("loaded");
+      }
+    };
     img.onerror = () => setLogoStatus("error");
     img.src = logoUrl;
   }, [logoUrl]);
@@ -134,11 +160,23 @@ export function EmailCard({ subject, from, snippet, isRead, isSelected, onClick 
     >
       <div className="relative shrink-0">
         <Avatar className="h-12 w-12">
-          {logoStatus === "loaded" && logoUrl ? (
-            <img
+          {isCurrentUser && currentAccountImage ? (
+            <NextImage
+              src={currentAccountImage}
+              alt={senderName}
+              width={48}
+              height={48}
+              className="aspect-square size-full object-cover"
+              unoptimized
+            />
+          ) : logoStatus === "loaded" && logoUrl ? (
+            <NextImage
               src={logoUrl}
               alt={senderName}
+              width={48}
+              height={48}
               className="aspect-square size-full object-contain"
+              unoptimized
             />
           ) : (
             <AvatarFallback

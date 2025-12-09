@@ -14,6 +14,39 @@ import type {
   ForwardEmailParams,
 } from "./types";
 
+interface GmailHeader {
+  name?: string | null;
+  value?: string | null;
+}
+
+interface GmailMessageBody {
+  attachmentId?: string | null;
+  size?: number | null;
+  data?: string | null;
+}
+
+interface GmailMessagePart {
+  partId?: string | null;
+  mimeType?: string | null;
+  filename?: string | null;
+  headers?: GmailHeader[];
+  body?: GmailMessageBody;
+  parts?: GmailMessagePart[];
+}
+
+interface GmailPayload extends GmailMessagePart {
+  headers?: GmailHeader[];
+}
+
+interface GmailMessageData {
+  id?: string | null;
+  threadId?: string | null;
+  labelIds?: string[] | null;
+  snippet?: string | null;
+  internalDate?: string | null;
+  payload?: GmailPayload | null;
+}
+
 export class GmailService implements IEmailService {
   private gmail;
 
@@ -204,7 +237,7 @@ export class GmailService implements IEmailService {
     });
 
     const attachments: Attachment[] = [];
-    const extractAttachments = (parts: any[]) => {
+    const extractAttachments = (parts: GmailMessagePart[]) => {
       for (const part of parts) {
         if (part.filename && part.body?.attachmentId) {
           attachments.push({
@@ -237,7 +270,7 @@ export class GmailService implements IEmailService {
     let foundName = "attachment";
     let foundContentType = "application/octet-stream";
 
-    const findAttachment = (parts: any[]) => {
+    const findAttachment = (parts: GmailMessagePart[]) => {
       for (const part of parts) {
         if (part.body?.attachmentId === attachmentId) {
           foundName = part.filename || "attachment";
@@ -377,39 +410,39 @@ export class GmailService implements IEmailService {
       .replace(/=+$/, "");
   }
 
-  private parseEmailListItem(data: any): EmailListItem {
+  private parseEmailListItem(data: GmailMessageData): EmailListItem {
     const headers = data.payload?.headers || [];
     const getHeader = (name: string) =>
-      headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value;
+      headers.find((h: GmailHeader) => h.name?.toLowerCase() === name.toLowerCase())?.value;
 
     return {
-      id: data.id,
-      threadId: data.threadId,
+      id: data.id || "",
+      threadId: data.threadId || undefined,
       subject: getHeader("Subject") || "(No Subject)",
       from: this.parseEmailAddress(getHeader("From") || ""),
       snippet: data.snippet || "",
-      receivedAt: new Date(parseInt(data.internalDate)),
+      receivedAt: new Date(parseInt(data.internalDate || "0")),
       isRead: !data.labelIds?.includes("UNREAD"),
       isStarred: data.labelIds?.includes("STARRED") || false,
       hasAttachments: this.checkHasAttachments(data.payload),
     };
   }
 
-  private parseEmailMessage(data: any): EmailMessage {
+  private parseEmailMessage(data: GmailMessageData): EmailMessage {
     const headers = data.payload?.headers || [];
     const getHeader = (name: string) =>
-      headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value;
+      headers.find((h: GmailHeader) => h.name?.toLowerCase() === name.toLowerCase())?.value;
 
     return {
-      id: data.id,
-      threadId: data.threadId,
+      id: data.id || "",
+      threadId: data.threadId || undefined,
       subject: getHeader("Subject") || "(No Subject)",
       from: this.parseEmailAddress(getHeader("From") || ""),
       to: this.parseEmailAddresses(getHeader("To") || ""),
       cc: this.parseEmailAddresses(getHeader("Cc") || ""),
-      body: this.extractBody(data.payload),
+      body: data.payload ? this.extractBody(data.payload) : {},
       snippet: data.snippet || "",
-      receivedAt: new Date(parseInt(data.internalDate)),
+      receivedAt: new Date(parseInt(data.internalDate || "0")),
       isRead: !data.labelIds?.includes("UNREAD"),
       isStarred: data.labelIds?.includes("STARRED") || false,
       hasAttachments: this.checkHasAttachments(data.payload),
@@ -433,10 +466,10 @@ export class GmailService implements IEmailService {
     return value.split(",").map((addr) => this.parseEmailAddress(addr.trim()));
   }
 
-  private extractBody(payload: any): { text?: string; html?: string } {
+  private extractBody(payload: GmailPayload): { text?: string; html?: string } {
     const body: { text?: string; html?: string } = {};
 
-    const extractFromPart = (part: any) => {
+    const extractFromPart = (part: GmailMessagePart) => {
       if (part.mimeType === "text/plain" && part.body?.data) {
         body.text = Buffer.from(part.body.data, "base64url").toString("utf-8");
       } else if (part.mimeType === "text/html" && part.body?.data) {
@@ -459,10 +492,10 @@ export class GmailService implements IEmailService {
     return body;
   }
 
-  private checkHasAttachments(payload: any): boolean {
+  private checkHasAttachments(payload: GmailPayload | null | undefined): boolean {
     if (!payload) return false;
 
-    const check = (part: any): boolean => {
+    const check = (part: GmailMessagePart): boolean => {
       if (part.filename && part.filename.length > 0) {
         return true;
       }

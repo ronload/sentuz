@@ -185,6 +185,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
     image: acc.image || undefined,
   }));
 
+  const selectedAccount = accountsWithEmail.find((acc) => acc.id === selectedAccountId);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden">
       {/* Sidebar */}
@@ -237,6 +239,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
               onDeleteEmail={handleDeleteEmail}
               onLoadMore={loadMore}
               hasMore={hasMore}
+              currentAccountEmail={selectedAccount?.email}
+              currentAccountImage={selectedAccount?.image}
             />
           </div>
         </div>
@@ -246,6 +250,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
           <EmailThreadView
             messages={threadMessages}
             isLoading={threadLoading}
+            currentAccountEmail={selectedAccount?.email}
+            currentAccountImage={selectedAccount?.image}
             onReply={handleReply}
             onForward={handleForward}
             onStar={(emailId) => {

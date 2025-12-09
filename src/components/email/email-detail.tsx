@@ -1,7 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, Reply, ReplyAll, Forward, Star, Trash2, Paperclip, Download } from "lucide-react";
+import {
+  ArrowLeft,
+  Reply,
+  ReplyAll,
+  Forward,
+  Star,
+  Trash2,
+  Paperclip,
+  Download,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

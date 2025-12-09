@@ -51,6 +51,21 @@ export interface Account {
 
 type EmailCategory = "all" | "transaction" | "updates" | "promotions";
 
+interface RawEmailData {
+  id: string;
+  threadId?: string;
+  subject: string;
+  from: {
+    name?: string;
+    address: string;
+  };
+  snippet: string;
+  receivedAt: string;
+  isRead: boolean;
+  isStarred: boolean;
+  hasAttachments: boolean;
+}
+
 interface UseEmailsOptions {
   accountId?: string;
   folderId?: string;
@@ -151,10 +166,13 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<Error | null>(null);
   const [nextPageToken, setNextPageToken] = React.useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = React.useState(false);
 
   const fetchEmails = React.useCallback(
     async (pageToken?: string) => {
-      if (!accountId) {
+      // Wait for both accountId AND folderId to be available
+      // This prevents fetching all emails before folder selection completes
+      if (!accountId || !folderId) {
         setEmails([]);
         return;
       }
@@ -178,7 +196,7 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
         }
         const data = await response.json();
 
-        const parsedEmails = data.messages.map((email: any) => ({
+        const parsedEmails = data.messages.map((email: RawEmailData) => ({
           ...email,
           receivedAt: new Date(email.receivedAt),
         }));
@@ -198,10 +216,16 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
         setError(err instanceof Error ? err : new Error("Unknown error"));
       } finally {
         setIsLoading(false);
+        setHasInitialized(true);
       }
     },
     [accountId, folderId, query, category]
   );
+
+  // Reset initialization state when account or folder changes
+  React.useEffect(() => {
+    setHasInitialized(false);
+  }, [accountId, folderId]);
 
   React.useEffect(() => {
     fetchEmails();
@@ -215,7 +239,9 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
 
   return {
     emails,
-    isLoading,
+    // Show loading state until first successful load completes
+    // This prevents flash of EmptyState during initial folder selection
+    isLoading: isLoading || !hasInitialized,
     error,
     hasMore: !!nextPageToken,
     loadMore,
@@ -281,7 +307,7 @@ export function useEmailThread(accountId?: string, threadId?: string) {
         }
         const data = await response.json();
         setMessages(
-          data.messages.map((msg: any) => ({
+          data.messages.map((msg: RawEmailData) => ({
             ...msg,
             receivedAt: new Date(msg.receivedAt),
           }))
