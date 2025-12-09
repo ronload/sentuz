@@ -58,7 +58,7 @@ export function AppSidebar({
   onSelectFolder,
   onAddAccount,
 }: AppSidebarProps) {
-  const { t, locale, setLocale } = useI18n();
+  const { t, setLocale } = useI18n();
   const { theme, setTheme } = useTheme();
 
   const selectedAccount = accounts.find((acc) => acc.id === selectedAccountId) || accounts[0];

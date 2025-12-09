@@ -379,7 +379,7 @@ export function EmailThreadView({
   return (
     <div className={cn("h-full", isSingleMessage ? "" : "overflow-y-auto")}>
       <div className={cn(isSingleMessage ? "h-full" : "flex flex-col gap-4")}>
-        {messages.map((message, index) => (
+        {messages.map((message) => (
           <ThreadMessageCard
             key={message.id}
             message={message}

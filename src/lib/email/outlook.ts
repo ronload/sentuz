@@ -3,7 +3,6 @@ import type {
   EmailMessage,
   EmailListItem,
   EmailFolder,
-  EmailAddress,
   SendEmailParams,
   ListEmailsParams,
   ListEmailsResponse,

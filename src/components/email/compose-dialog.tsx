@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { X, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -63,13 +63,6 @@ function getRootDomain(domain: string): string {
   return parts.slice(-2).join(".");
 }
 
-// Check if email is from a personal domain
-function isPersonalEmail(email: string): boolean {
-  const domain = getEmailDomain(email);
-  const rootDomain = getRootDomain(domain);
-  return PERSONAL_EMAIL_DOMAINS.has(domain) || PERSONAL_EMAIL_DOMAINS.has(rootDomain);
-}
-
 // Get company logo URL using Google Favicon API (free, no CORS, high coverage)
 function getCompanyLogoUrl(email: string): string | null {
   const domain = getEmailDomain(email);
