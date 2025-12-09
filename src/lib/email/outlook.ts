@@ -11,6 +11,7 @@ import type {
   ReplyEmailParams,
   ForwardEmailParams,
 } from "./types";
+import { extractUnsubscribeUrlFromHtml } from "./unsubscribe-parser";
 
 interface OutlookEmailAddress {
   name?: string;
@@ -110,7 +111,7 @@ export class OutlookService implements IEmailService {
 
     queryParams.set(
       "$select",
-      "id,subject,from,receivedDateTime,bodyPreview,isRead,flag,hasAttachments,conversationId,internetMessageHeaders"
+      "id,subject,from,receivedDateTime,body,bodyPreview,isRead,flag,hasAttachments,conversationId,internetMessageHeaders"
     );
     queryParams.set("$orderby", "receivedDateTime desc");
     queryParams.set("$top", String(params.maxResults || 20));
@@ -326,13 +327,19 @@ export class OutlookService implements IEmailService {
     return { id: "sent" };
   }
 
-  private parseEmailListItem(data: OutlookMessageData): EmailListItem {
+  private parseEmailListItem = (data: OutlookMessageData): EmailListItem => {
+    // Try to get unsubscribe URL from header first
     const unsubscribeHeader = data.internetMessageHeaders?.find(
       (h) => h.name.toLowerCase() === "list-unsubscribe"
     );
-    const unsubscribeUrl = unsubscribeHeader
+    let unsubscribeUrl = unsubscribeHeader
       ? this.parseUnsubscribeUrl(unsubscribeHeader.value)
       : undefined;
+
+    // Fallback: extract from HTML body if header not found
+    if (!unsubscribeUrl && data.body?.contentType === "html" && data.body?.content) {
+      unsubscribeUrl = extractUnsubscribeUrlFromHtml(data.body.content);
+    }
 
     return {
       id: data.id,
@@ -349,7 +356,7 @@ export class OutlookService implements IEmailService {
       hasAttachments: data.hasAttachments || false,
       unsubscribeUrl,
     };
-  }
+  };
 
   private parseUnsubscribeUrl(header: string): string | undefined {
     const urlMatch = header.match(/<(https?:\/\/[^>]+)>/);

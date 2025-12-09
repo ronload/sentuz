@@ -13,6 +13,7 @@ import type {
   ReplyEmailParams,
   ForwardEmailParams,
 } from "./types";
+import { extractUnsubscribeUrlFromHtml } from "./unsubscribe-parser";
 
 interface GmailHeader {
   name?: string | null;
@@ -417,10 +418,19 @@ export class GmailService implements IEmailService {
     const getHeader = (name: string) =>
       headers.find((h: GmailHeader) => h.name?.toLowerCase() === name.toLowerCase())?.value;
 
+    // Try to get unsubscribe URL from header first
     const unsubscribeHeader = getHeader("List-Unsubscribe");
-    const unsubscribeUrl = unsubscribeHeader
+    let unsubscribeUrl = unsubscribeHeader
       ? this.parseUnsubscribeUrl(unsubscribeHeader)
       : undefined;
+
+    // Fallback: extract from HTML body if header not found
+    if (!unsubscribeUrl && data.payload) {
+      const body = this.extractBody(data.payload);
+      if (body.html) {
+        unsubscribeUrl = extractUnsubscribeUrlFromHtml(body.html);
+      }
+    }
 
     return {
       id: data.id || "",
