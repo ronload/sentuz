@@ -59,17 +59,19 @@ export function EmailCardStack({
   return (
     <motion.div layout transition={springTransition}>
       {/* Header */}
-      <button
+      <motion.button
+        layout="position"
         type="button"
         className="email-stack-header w-full text-left"
         onClick={() => setIsExpanded(!isExpanded)}
+        transition={springTransition}
       >
         <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={springTransition}>
           <ChevronRight className="h-4 w-4 shrink-0" />
         </motion.div>
         <span className="text-muted-foreground">{title}</span>
         <span className="email-stack-count">{emails.length}</span>
-      </button>
+      </motion.button>
 
       {/* Cards Container - all emails always in DOM */}
       <motion.div
