@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EmailCard } from "./email-card";
-import { cn } from "@/lib/utils";
 import type { Email } from "./email-list";
 
 interface EmailCardStackProps {
@@ -26,6 +25,13 @@ interface EmailCardStackProps {
   onUnsubscribeEmail?: (email: Email) => void;
 }
 
+// Spring transition for natural iOS-like feel with bounce
+const springTransition = {
+  type: "spring" as const,
+  stiffness: 200,
+  damping: 20,
+};
+
 export function EmailCardStack({
   title,
   emails,
@@ -34,7 +40,6 @@ export function EmailCardStack({
   currentAccountEmail,
   currentAccountImage,
   unsubscribedIds,
-  newEmailIds,
   onSelectEmail,
   onStarEmail,
   onMarkAsRead,
@@ -48,36 +53,88 @@ export function EmailCardStack({
 
   if (emails.length === 0) return null;
 
-  // Preview: show up to 3 cards in stack
-  const previewEmails = emails.slice(0, 3);
+  // Always render all emails - they're always in DOM
+  const previewCount = 3;
 
   return (
-    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+    <motion.div layout transition={springTransition}>
       {/* Header */}
-      <CollapsibleTrigger asChild>
-        <button type="button" className="email-stack-header w-full text-left">
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 shrink-0 transition-transform duration-200",
-              isExpanded && "rotate-90"
-            )}
-          />
-          <span className="text-muted-foreground">{title}</span>
-          <span className="email-stack-count">{emails.length}</span>
-        </button>
-      </CollapsibleTrigger>
+      <button
+        type="button"
+        className="email-stack-header w-full text-left"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={springTransition}>
+          <ChevronRight className="h-4 w-4 shrink-0" />
+        </motion.div>
+        <span className="text-muted-foreground">{title}</span>
+        <span className="email-stack-count">{emails.length}</span>
+      </button>
 
-      {/* Collapsed: Show stacked cards */}
-      {!isExpanded && (
-        <div className="email-stack-collapsed" onClick={() => setIsExpanded(true)}>
-          {previewEmails.map((email, index) => (
-            <div
+      {/* Cards Container - all emails always in DOM */}
+      <motion.div
+        layout
+        className="relative"
+        style={{ paddingBottom: isExpanded ? 0 : 16 }}
+        transition={springTransition}
+      >
+        {emails.map((email, index) => {
+          const isTopCard = index === 0;
+          const isInPreview = index < previewCount;
+          const isVisible = isExpanded || isInPreview;
+
+          // Calculate animation values
+          let opacity: number;
+          let scale: number;
+          let y: number;
+
+          if (isExpanded) {
+            // Expanded: all cards fully visible
+            opacity = 1;
+            scale = 1;
+            y = 0;
+          } else if (isInPreview) {
+            // Collapsed preview: stacked effect
+            opacity = 1 - index * 0.2;
+            scale = 1 - index * 0.02;
+            y = index * 8;
+          } else {
+            // Collapsed hidden: cards beyond preview
+            opacity = 0;
+            scale = 0.9;
+            y = previewCount * 8;
+          }
+
+          return (
+            <motion.div
               key={email.id}
-              className={cn(
-                "email-stack-card",
-                newEmailIds?.has(email.id) && "animate-slide-in-top"
-              )}
-              style={{ "--stack-index": index } as React.CSSProperties}
+              layout
+              animate={{
+                opacity,
+                scale,
+                y,
+                zIndex: emails.length - index,
+              }}
+              transition={{
+                layout: springTransition,
+                opacity: {
+                  ...springTransition,
+                  delay: isExpanded && !isInPreview ? (index - previewCount) * 0.03 : 0,
+                },
+                scale: {
+                  ...springTransition,
+                  delay: isExpanded && !isInPreview ? (index - previewCount) * 0.03 : 0,
+                },
+              }}
+              style={{
+                position: isExpanded ? "relative" : isTopCard ? "relative" : "absolute",
+                top: isExpanded ? "auto" : 0,
+                left: isExpanded ? "auto" : 0,
+                right: isExpanded ? "auto" : 0,
+                marginBottom: isExpanded ? 16 : 0,
+                pointerEvents: isVisible && (isExpanded || isTopCard) ? "auto" : "none",
+              }}
+              onClick={!isExpanded && !isTopCard ? () => setIsExpanded(true) : undefined}
             >
               <EmailCard
                 id={email.id}
@@ -93,55 +150,27 @@ export function EmailCardStack({
                 currentAccountImage={currentAccountImage}
                 unsubscribeUrl={email.unsubscribeUrl}
                 isUnsubscribed={unsubscribedIds?.has(email.id)}
-                onClick={index === 0 ? () => onSelectEmail?.(email) : undefined}
-                onStar={index === 0 ? () => onStarEmail?.(email.id, !email.isStarred) : undefined}
-                onMarkAsRead={index === 0 ? () => onMarkAsRead?.(email.id) : undefined}
-                onMarkAsUnread={index === 0 ? () => onMarkAsUnread?.(email.id) : undefined}
-                onDelete={index === 0 ? () => onDeleteEmail?.(email.id) : undefined}
-                onReply={index === 0 ? () => onReplyEmail?.(email.id) : undefined}
-                onForward={index === 0 ? () => onForwardEmail?.(email.id) : undefined}
-                onUnsubscribe={index === 0 ? () => onUnsubscribeEmail?.(email) : undefined}
+                onClick={isExpanded || isTopCard ? () => onSelectEmail?.(email) : undefined}
+                onStar={
+                  isExpanded || isTopCard
+                    ? () => onStarEmail?.(email.id, !email.isStarred)
+                    : undefined
+                }
+                onMarkAsRead={isExpanded || isTopCard ? () => onMarkAsRead?.(email.id) : undefined}
+                onMarkAsUnread={
+                  isExpanded || isTopCard ? () => onMarkAsUnread?.(email.id) : undefined
+                }
+                onDelete={isExpanded || isTopCard ? () => onDeleteEmail?.(email.id) : undefined}
+                onReply={isExpanded || isTopCard ? () => onReplyEmail?.(email.id) : undefined}
+                onForward={isExpanded || isTopCard ? () => onForwardEmail?.(email.id) : undefined}
+                onUnsubscribe={
+                  isExpanded || isTopCard ? () => onUnsubscribeEmail?.(email) : undefined
+                }
               />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Expanded: Show all cards */}
-      <CollapsibleContent>
-        <div className="email-stack-expanded">
-          {emails.map((email) => (
-            <div
-              key={email.id}
-              className={newEmailIds?.has(email.id) ? "animate-slide-in-top" : ""}
-            >
-              <EmailCard
-                id={email.id}
-                subject={email.subject}
-                from={email.from}
-                snippet={email.snippet}
-                receivedAt={email.receivedAt}
-                isRead={email.isRead}
-                isStarred={email.isStarred}
-                hasAttachments={email.hasAttachments}
-                isSelected={selectedEmailId === email.id}
-                currentAccountEmail={currentAccountEmail}
-                currentAccountImage={currentAccountImage}
-                unsubscribeUrl={email.unsubscribeUrl}
-                isUnsubscribed={unsubscribedIds?.has(email.id)}
-                onClick={() => onSelectEmail?.(email)}
-                onStar={() => onStarEmail?.(email.id, !email.isStarred)}
-                onMarkAsRead={() => onMarkAsRead?.(email.id)}
-                onMarkAsUnread={() => onMarkAsUnread?.(email.id)}
-                onDelete={() => onDeleteEmail?.(email.id)}
-                onReply={() => onReplyEmail?.(email.id)}
-                onForward={() => onForwardEmail?.(email.id)}
-                onUnsubscribe={() => onUnsubscribeEmail?.(email)}
-              />
-            </div>
-          ))}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+    </motion.div>
   );
 }

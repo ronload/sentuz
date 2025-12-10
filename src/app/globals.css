@@ -45,6 +45,12 @@
 
 :root {
   --radius: 0.625rem;
+  /* Spring animation - fallback for Safari */
+  --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* Spring durations */
+  --spring-duration-fast: 300ms;
+  --spring-duration-normal: 400ms;
   /* zinc-200 for background */
   --background: oklch(0.92 0.004 286.32);
   --foreground: oklch(0.141 0.005 285.823);
@@ -118,6 +124,23 @@
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
+/* Modern browsers: use linear() for true spring physics */
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    /* Snappy spring: stiffness ~300, damping ~20 */
+    --spring-bounce: linear(
+      0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%,
+      0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%,
+      1.001 85.5%, 1
+    );
+    /* Smooth spring: stiffness ~200, damping ~25 */
+    --spring-smooth: linear(
+      0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 15.5%, 0.938 23.8%, 1.017 30.2%,
+      1.041 38.1%, 1.037 46.4%, 1.021 54.8%, 1.009 68.6%, 1.002 82.4%, 1
+    );
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -143,40 +166,6 @@
   animation: slide-in-top 0.3s ease-out forwards;
 }
 
-/* Email Stack - Collapsed State */
-.email-stack-collapsed {
-  position: relative;
-  cursor: pointer;
-  padding-bottom: 16px;
-}
-
-.email-stack-card {
-  transition: all 0.3s ease-out;
-}
-
-.email-stack-card:first-child {
-  position: relative;
-  z-index: 10;
-  opacity: 1;
-}
-
-.email-stack-card:not(:first-child) {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  pointer-events: none;
-  transform: translateY(calc(var(--stack-index) * 8px)) scale(calc(1 - var(--stack-index) * 0.02));
-  opacity: calc(1 - var(--stack-index) * 0.2);
-  z-index: calc(10 - var(--stack-index));
-}
-
-/* Hover - expand preview */
-.email-stack-collapsed:hover .email-stack-card:not(:first-child) {
-  transform: translateY(calc(var(--stack-index) * 12px)) scale(calc(1 - var(--stack-index) * 0.015));
-  opacity: calc(1 - var(--stack-index) * 0.15);
-}
-
 /* Stack Header */
 .email-stack-header {
   display: flex;
@@ -198,76 +187,4 @@
   background-color: var(--muted);
   font-size: 12px;
   font-weight: 500;
-}
-
-/* Expanded animation */
-.email-stack-expanded {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-@keyframes stack-card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.email-stack-expanded > * {
-  animation: stack-card-enter 0.2s ease-out backwards;
-}
-
-.email-stack-expanded > *:nth-child(1) {
-  animation-delay: 0ms;
-}
-.email-stack-expanded > *:nth-child(2) {
-  animation-delay: 30ms;
-}
-.email-stack-expanded > *:nth-child(3) {
-  animation-delay: 60ms;
-}
-.email-stack-expanded > *:nth-child(4) {
-  animation-delay: 90ms;
-}
-.email-stack-expanded > *:nth-child(5) {
-  animation-delay: 120ms;
-}
-.email-stack-expanded > *:nth-child(n + 6) {
-  animation-delay: 150ms;
-}
-
-/* Collapsible content animation */
-[data-slot="collapsible-content"][data-state="open"] {
-  animation: collapsible-down 0.2s ease-out;
-}
-
-[data-slot="collapsible-content"][data-state="closed"] {
-  animation: collapsible-up 0.2s ease-out;
-}
-
-@keyframes collapsible-down {
-  from {
-    height: 0;
-    opacity: 0;
-  }
-  to {
-    height: var(--radix-collapsible-content-height);
-    opacity: 1;
-  }
-}
-
-@keyframes collapsible-up {
-  from {
-    height: var(--radix-collapsible-content-height);
-    opacity: 1;
-  }
-  to {
-    height: 0;
-    opacity: 0;
-  }
 }
