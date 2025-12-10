@@ -56,7 +56,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
   }>();
   const [replyToEmailId, setReplyToEmailId] = React.useState<string>();
   const [emailViewMode, setEmailViewMode] = React.useState<EmailViewMode>("list");
-  const [dateFilter, setDateFilter] = React.useState<DateFilter>("all");
+  const [dateFilter, setDateFilter] = React.useState<DateFilter>("today");
 
   // Unsubscribe state
   const [unsubscribeDialogOpen, setUnsubscribeDialogOpen] = React.useState(false);

@@ -10,7 +10,7 @@ import { LayoutGroup } from "motion/react";
 import { useI18n } from "@/lib/i18n";
 
 export type EmailViewMode = "list" | "stack";
-export type DateFilter = "all" | "today" | "yesterday" | "thisWeek" | "thisMonth" | "older";
+export type DateFilter = "today" | "yesterday" | "thisWeek" | "thisMonth" | "older";
 
 export interface Email {
   id: string;
@@ -53,7 +53,6 @@ interface EmailListProps {
 }
 
 const DATE_FILTERS: { value: DateFilter; label: string }[] = [
-  { value: "all", label: "All" },
   { value: "today", label: "Today" },
   { value: "yesterday", label: "Yesterday" },
   { value: "thisWeek", label: "This Week" },
@@ -121,8 +120,6 @@ function categorizeEmailsByType(emails: Email[]): CategorizedByType {
 }
 
 function filterEmailsByDate(emails: Email[], filter: DateFilter): Email[] {
-  if (filter === "all") return emails;
-
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today);
@@ -276,7 +273,7 @@ export function EmailList({
   selectedEmailId,
   viewMode = "list",
   onViewModeChange,
-  dateFilter = "all",
+  dateFilter = "today",
   onDateFilterChange,
   onSelectEmail,
   onStarEmail,
