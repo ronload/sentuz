@@ -50,8 +50,6 @@ export interface Account {
   image?: string | null;
 }
 
-type EmailCategory = "all" | "transaction" | "updates" | "promotions";
-
 interface RawEmailData {
   id: string;
   threadId?: string;
@@ -72,22 +70,6 @@ interface UseEmailsOptions {
   accountId?: string;
   folderId?: string;
   query?: string;
-  category?: EmailCategory;
-}
-
-function buildCategoryQuery(category: EmailCategory): string | undefined {
-  switch (category) {
-    case "transaction":
-      // Search for transaction-related emails using keywords
-      return "{order receipt invoice payment confirmation shipping delivery transaction}";
-    case "updates":
-      return "category:updates";
-    case "promotions":
-      return "category:promotions";
-    case "all":
-    default:
-      return undefined;
-  }
 }
 
 export function useAccounts() {
@@ -163,7 +145,7 @@ export function useFolders(accountId?: string) {
   return { folders, isLoading, error, refetch: fetchFolders };
 }
 
-export function useEmails({ accountId, folderId, query, category = "all" }: UseEmailsOptions) {
+export function useEmails({ accountId, folderId, query }: UseEmailsOptions) {
   const [emails, setEmails] = React.useState<Email[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<Error | null>(null);
@@ -174,7 +156,7 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
 
   // Calculate current params key synchronously during render
   // This allows immediate detection of param changes without waiting for useEffect
-  const currentParamsKey = `${accountId ?? ""}-${folderId ?? ""}-${query ?? ""}-${category}`;
+  const currentParamsKey = `${accountId ?? ""}-${folderId ?? ""}-${query ?? ""}`;
 
   const fetchEmails = React.useCallback(
     async (pageToken?: string) => {
@@ -196,11 +178,7 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
       try {
         const params = new URLSearchParams({ accountId });
         if (folderId) params.set("folderId", folderId);
-
-        // Combine user query with category query
-        const categoryQuery = buildCategoryQuery(category);
-        const combinedQuery = [query, categoryQuery].filter(Boolean).join(" ");
-        if (combinedQuery) params.set("query", combinedQuery);
+        if (query) params.set("query", query);
 
         if (pageToken) params.set("pageToken", pageToken);
 
@@ -231,10 +209,10 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
       } finally {
         setIsLoading(false);
         // Mark this params combination as successfully loaded
-        setLoadedParamsKey(`${accountId ?? ""}-${folderId ?? ""}-${query ?? ""}-${category}`);
+        setLoadedParamsKey(`${accountId ?? ""}-${folderId ?? ""}-${query ?? ""}`);
       }
     },
-    [accountId, folderId, query, category]
+    [accountId, folderId, query]
   );
 
   React.useEffect(() => {

@@ -66,6 +66,13 @@ export const translations = {
         thisMonth: "This Month",
         older: "Older",
       },
+      category: {
+        primary: "Primary",
+        transaction: "Transaction",
+        updates: "Updates",
+        promotions: "Promotions",
+        social: "Social",
+      },
     },
     settings: {
       settings: "Settings",
@@ -142,6 +149,13 @@ export const translations = {
         thisWeek: "This Week",
         thisMonth: "This Month",
         older: "Older",
+      },
+      category: {
+        primary: "Primary",
+        transaction: "Transaction",
+        updates: "Updates",
+        promotions: "Promotions",
+        social: "Social",
       },
     },
     settings: {

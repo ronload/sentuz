@@ -6,7 +6,7 @@ import { Header } from "@/components/layout/header";
 import {
   EmailList,
   type EmailViewMode,
-  type EmailCategory,
+  type DateFilter,
   type Email,
 } from "@/components/email/email-list";
 import { EmailThreadView } from "@/components/email/email-thread-view";
@@ -56,7 +56,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
   }>();
   const [replyToEmailId, setReplyToEmailId] = React.useState<string>();
   const [emailViewMode, setEmailViewMode] = React.useState<EmailViewMode>("list");
-  const [emailCategory, setEmailCategory] = React.useState<EmailCategory>("all");
+  const [dateFilter, setDateFilter] = React.useState<DateFilter>("all");
 
   // Unsubscribe state
   const [unsubscribeDialogOpen, setUnsubscribeDialogOpen] = React.useState(false);
@@ -104,7 +104,6 @@ export function DashboardClient({ user }: DashboardClientProps) {
     accountId: useInitialEmails ? undefined : selectedAccountId,
     folderId: useInitialEmails ? undefined : selectedFolderId,
     query: searchQuery,
-    category: emailCategory,
   });
 
   // Use initial data until user changes folder/search/category
@@ -122,7 +121,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
     accountId: selectedAccountId,
     folderId: selectedFolderId,
     currentEmails: emails,
-    enabled: !searchQuery && emailCategory === "all" && !emailsLoading,
+    enabled: !searchQuery && !emailsLoading,
     interval: 30000,
     onNewEmails: (newEmails) => {
       prependEmails(newEmails);
@@ -280,11 +279,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
     setSelectedThreadId(undefined);
   };
 
-  const handleCategoryChange = (category: EmailCategory) => {
-    if (category !== emailCategory) {
-      setUseInitialEmails(false);
-    }
-    setEmailCategory(category);
+  const handleDateFilterChange = (filter: DateFilter) => {
+    setDateFilter(filter);
   };
 
   const handleUnsubscribe = (email: Email) => {
@@ -362,8 +358,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
               selectedEmailId={selectedEmailId}
               viewMode={emailViewMode}
               onViewModeChange={setEmailViewMode}
-              category={emailCategory}
-              onCategoryChange={handleCategoryChange}
+              dateFilter={dateFilter}
+              onDateFilterChange={handleDateFilterChange}
               onSelectEmail={handleSelectEmail}
               onStarEmail={handleStarEmail}
               onMarkAsRead={handleMarkAsRead}

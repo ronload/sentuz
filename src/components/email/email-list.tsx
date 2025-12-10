@@ -10,7 +10,7 @@ import { LayoutGroup } from "motion/react";
 import { useI18n } from "@/lib/i18n";
 
 export type EmailViewMode = "list" | "stack";
-export type EmailCategory = "all" | "transaction" | "updates" | "promotions";
+export type DateFilter = "all" | "today" | "yesterday" | "thisWeek" | "thisMonth" | "older";
 
 export interface Email {
   id: string;
@@ -34,8 +34,8 @@ interface EmailListProps {
   selectedEmailId?: string;
   viewMode?: EmailViewMode;
   onViewModeChange?: (mode: EmailViewMode) => void;
-  category?: EmailCategory;
-  onCategoryChange?: (category: EmailCategory) => void;
+  dateFilter?: DateFilter;
+  onDateFilterChange?: (filter: DateFilter) => void;
   onSelectEmail?: (email: Email) => void;
   onStarEmail?: (emailId: string, isStarred: boolean) => void;
   onMarkAsRead?: (emailId: string) => void;
@@ -52,24 +52,77 @@ interface EmailListProps {
   newEmailIds?: Set<string>;
 }
 
-const CATEGORIES: { value: EmailCategory; label: string }[] = [
+const DATE_FILTERS: { value: DateFilter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "transaction", label: "Transaction" },
-  { value: "updates", label: "Updates" },
-  { value: "promotions", label: "Promotions" },
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "thisWeek", label: "This Week" },
+  { value: "thisMonth", label: "This Month" },
+  { value: "older", label: "Older" },
 ];
 
-type DateCategory = "today" | "yesterday" | "thisWeek" | "thisMonth" | "older";
+// Email type classification
+type EmailType = "primary" | "transaction" | "updates" | "promotions" | "social";
 
-interface CategorizedEmails {
-  today: Email[];
-  yesterday: Email[];
-  thisWeek: Email[];
-  thisMonth: Email[];
-  older: Email[];
+interface CategorizedByType {
+  primary: Email[];
+  transaction: Email[];
+  updates: Email[];
+  promotions: Email[];
+  social: Email[];
 }
 
-function categorizeEmailsByDate(emails: Email[]): CategorizedEmails {
+function categorizeEmailByType(email: Email): EmailType {
+  const from = email.from.address.toLowerCase();
+  const subject = email.subject.toLowerCase();
+
+  // Social: social media platforms
+  if (
+    /facebook|twitter|linkedin|instagram|pinterest|tiktok|snapchat|reddit|discord|slack|x\.com/.test(
+      from
+    )
+  ) {
+    return "social";
+  }
+
+  // Transaction: order/payment related
+  if (/order|receipt|invoice|payment|confirmation|shipping|delivery|tracking/.test(subject)) {
+    return "transaction";
+  }
+
+  // Promotions: marketing/sales
+  if (/sale|discount|offer|deal|promo|coupon|%\s*off|limited|exclusive|free/.test(subject)) {
+    return "promotions";
+  }
+
+  // Updates: notifications
+  if (/update|notification|alert|reminder|newsletter|digest|weekly|monthly/.test(subject)) {
+    return "updates";
+  }
+
+  return "primary";
+}
+
+function categorizeEmailsByType(emails: Email[]): CategorizedByType {
+  const result: CategorizedByType = {
+    primary: [],
+    transaction: [],
+    updates: [],
+    promotions: [],
+    social: [],
+  };
+
+  for (const email of emails) {
+    const type = categorizeEmailByType(email);
+    result[type].push(email);
+  }
+
+  return result;
+}
+
+function filterEmailsByDate(emails: Email[], filter: DateFilter): Email[] {
+  if (filter === "all") return emails;
+
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today);
@@ -78,59 +131,54 @@ function categorizeEmailsByDate(emails: Email[]): CategorizedEmails {
   weekStart.setDate(weekStart.getDate() - today.getDay());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const result: CategorizedEmails = {
-    today: [],
-    yesterday: [],
-    thisWeek: [],
-    thisMonth: [],
-    older: [],
-  };
-
-  for (const email of emails) {
+  return emails.filter((email) => {
     const emailDate = new Date(email.receivedAt);
     const emailDay = new Date(emailDate.getFullYear(), emailDate.getMonth(), emailDate.getDate());
 
-    if (emailDay.getTime() === today.getTime()) {
-      result.today.push(email);
-    } else if (emailDay.getTime() === yesterday.getTime()) {
-      result.yesterday.push(email);
-    } else if (emailDay >= weekStart) {
-      result.thisWeek.push(email);
-    } else if (emailDay >= monthStart) {
-      result.thisMonth.push(email);
-    } else {
-      result.older.push(email);
+    switch (filter) {
+      case "today":
+        return emailDay.getTime() === today.getTime();
+      case "yesterday":
+        return emailDay.getTime() === yesterday.getTime();
+      case "thisWeek":
+        return (
+          emailDay >= weekStart && emailDay < today && emailDay.getTime() !== yesterday.getTime()
+        );
+      case "thisMonth":
+        return emailDay >= monthStart && emailDay < weekStart;
+      case "older":
+        return emailDay < monthStart;
+      default:
+        return true;
     }
-  }
-
-  return result;
+  });
 }
 
-function CategoryFilter({
-  category,
-  onCategoryChange,
+function DateFilterNav({
+  dateFilter,
+  onDateFilterChange,
 }: {
-  category: EmailCategory;
-  onCategoryChange?: (category: EmailCategory) => void;
+  dateFilter: DateFilter;
+  onDateFilterChange?: (filter: DateFilter) => void;
 }) {
   return (
     <div
       className="bg-card flex items-center rounded-lg shadow-sm"
       style={{ padding: "4px", gap: "4px" }}
     >
-      {CATEGORIES.map((cat) => (
+      {DATE_FILTERS.map((item) => (
         <button
-          key={cat.value}
+          key={item.value}
           type="button"
-          onClick={() => onCategoryChange?.(cat.value)}
+          onClick={() => onDateFilterChange?.(item.value)}
           className={`rounded-md text-sm font-medium transition-colors ${
-            category === cat.value
+            dateFilter === item.value
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
           style={{ height: "28px", padding: "0 12px" }}
         >
-          {cat.label}
+          {item.label}
         </button>
       ))}
     </div>
@@ -228,8 +276,8 @@ export function EmailList({
   selectedEmailId,
   viewMode = "list",
   onViewModeChange,
-  category = "all",
-  onCategoryChange,
+  dateFilter = "all",
+  onDateFilterChange,
   onSelectEmail,
   onStarEmail,
   onMarkAsRead,
@@ -257,6 +305,9 @@ export function EmailList({
     }
   }, [hasMore, isLoading, onLoadMore]);
 
+  // Filter emails by date first
+  const filteredEmails = filterEmailsByDate(emails, dateFilter);
+
   const toolbar = (
     <div
       style={{
@@ -266,7 +317,7 @@ export function EmailList({
         paddingBottom: "16px",
       }}
     >
-      <CategoryFilter category={category} onCategoryChange={onCategoryChange} />
+      <DateFilterNav dateFilter={dateFilter} onDateFilterChange={onDateFilterChange} />
       <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
     </div>
   );
@@ -280,7 +331,7 @@ export function EmailList({
     );
   }
 
-  if (!isLoading && emails.length === 0) {
+  if (!isLoading && filteredEmails.length === 0) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
         {toolbar}
@@ -289,17 +340,17 @@ export function EmailList({
     );
   }
 
-  // Categorize emails for stack mode
-  const categorizedEmails = viewMode === "stack" ? categorizeEmailsByDate(emails) : null;
+  // Categorize emails by type for stack mode
+  const categorizedByType = viewMode === "stack" ? categorizeEmailsByType(filteredEmails) : null;
 
-  // Stack mode rendering
-  if (viewMode === "stack" && categorizedEmails) {
-    const categories: { key: DateCategory; title: string }[] = [
-      { key: "today", title: t.email.stack.today },
-      { key: "yesterday", title: t.email.stack.yesterday },
-      { key: "thisWeek", title: t.email.stack.thisWeek },
-      { key: "thisMonth", title: t.email.stack.thisMonth },
-      { key: "older", title: t.email.stack.older },
+  // Stack mode rendering - group by email type
+  if (viewMode === "stack" && categorizedByType) {
+    const typeCategories: { key: EmailType; title: string }[] = [
+      { key: "primary", title: t.email.category.primary },
+      { key: "transaction", title: t.email.category.transaction },
+      { key: "updates", title: t.email.category.updates },
+      { key: "promotions", title: t.email.category.promotions },
+      { key: "social", title: t.email.category.social },
     ];
 
     return (
@@ -312,12 +363,12 @@ export function EmailList({
         >
           <LayoutGroup>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {categories.map(({ key, title }) => (
+              {typeCategories.map(({ key, title }) => (
                 <EmailCardStack
                   key={key}
                   title={title}
-                  emails={categorizedEmails[key]}
-                  defaultExpanded={key === "today"}
+                  emails={categorizedByType[key]}
+                  defaultExpanded={key === "primary"}
                   selectedEmailId={selectedEmailId}
                   currentAccountEmail={currentAccountEmail}
                   currentAccountImage={currentAccountImage}
@@ -355,7 +406,7 @@ export function EmailList({
         style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {emails.map((email) => (
+          {filteredEmails.map((email) => (
             <div
               key={email.id}
               className={newEmailIds?.has(email.id) ? "animate-slide-in-top" : ""}

@@ -339,11 +339,9 @@ function ThreadMessageCard({
         </Avatar>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate font-semibold">{senderName}</span>
-            <span className="text-muted-foreground truncate text-sm">
-              &lt;{message.from.address}&gt;
-            </span>
+          <div className="truncate font-semibold">{senderName}</div>
+          <div className="text-muted-foreground truncate text-sm">
+            {t.email.from}: {message.from.address}
           </div>
           <div className="text-muted-foreground truncate text-sm">
             {t.email.to}: {message.to.map((addr) => addr.name || addr.address).join(", ")}

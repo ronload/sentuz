@@ -162,9 +162,9 @@ export function EmailDetail({
             </Avatar>
 
             <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{senderName}</span>
-                <span className="text-muted-foreground text-sm">&lt;{email.from.address}&gt;</span>
+              <div className="font-semibold">{senderName}</div>
+              <div className="text-muted-foreground text-sm">
+                {t.email.from}: {email.from.address}
               </div>
               <div className="text-muted-foreground text-sm">
                 {t.email.to}: {email.to.map((addr) => addr.name || addr.address).join(", ")}
