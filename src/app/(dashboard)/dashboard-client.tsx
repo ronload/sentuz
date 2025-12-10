@@ -269,7 +269,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
   };
 
   const handleAddAccount = () => {
-    window.location.href = "/login";
+    window.location.href = "/link-account";
   };
 
   const handleSearch = (query: string) => {
@@ -338,6 +338,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
           setSelectedThreadId(undefined);
         }}
         onAddAccount={handleAddAccount}
+        user={user}
       />
 
       {/* Main content area - using grid for precise 50/50 split */}

@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   Inbox,
   Star,
@@ -14,7 +15,12 @@ import {
   Sun,
   Moon,
   Languages,
+  LogOut,
+  User,
+  ChevronRight,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -24,9 +30,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Kbd } from "@/components/ui/kbd";
 import { useI18n } from "@/lib/i18n";
@@ -47,6 +50,11 @@ interface AppSidebarProps {
   onSelectAccount: (accountId: string) => void;
   onSelectFolder: (folder: FolderType) => void;
   onAddAccount: () => void;
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
 }
 
 export function AppSidebar({
@@ -56,9 +64,12 @@ export function AppSidebar({
   onSelectAccount,
   onSelectFolder,
   onAddAccount,
+  user,
 }: AppSidebarProps) {
   const { t, setLocale } = useI18n();
   const { theme, setTheme } = useTheme();
+  const [themeOpen, setThemeOpen] = React.useState(false);
+  const [languageOpen, setLanguageOpen] = React.useState(false);
 
   const selectedAccount = accounts.find((acc) => acc.id === selectedAccountId) || accounts[0];
   const displayEmail = selectedAccount?.email || "";
@@ -177,25 +188,63 @@ export function AppSidebar({
             <span className="flex-1 text-left">{t.sidebar.trash}</span>
           </button>
 
-          {/* Settings with hover dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm">
+          {/* Account collapsible */}
+          <Collapsible>
+            <CollapsibleTrigger className="hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm">
+              <User className="text-muted-foreground h-4 w-4" />
+              <span className="flex-1 text-left">{t.sidebar.accounts}</span>
+              <ChevronRight className="text-muted-foreground h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-90" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5">
+              {/* User info - no click action */}
+              <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={user?.image || undefined} />
+                  <AvatarFallback className="text-xs">
+                    {(user?.name || "U")[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="truncate">{user?.name || "User"}</span>
+              </div>
+              {/* Sign out */}
+              <button
+                className="text-destructive hover:bg-destructive/10 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+              >
+                <LogOut className="h-4 w-4" />
+                <span>{t.auth.signOut}</span>
+              </button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Settings collapsible */}
+          <Collapsible>
+            <CollapsibleTrigger className="hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm">
               <Settings className="text-muted-foreground h-4 w-4" />
               <span className="flex-1 text-left">{t.settings.settings}</span>
-              <Kbd>⌘</Kbd>
-              <Kbd>S</Kbd>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" side="right" className="w-48">
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
+              <ChevronRight className="text-muted-foreground h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-90" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5">
+              {/* Theme dropdown - hover trigger */}
+              <DropdownMenu open={themeOpen} onOpenChange={setThemeOpen}>
+                <DropdownMenuTrigger
+                  className="hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm"
+                  onMouseEnter={() => setThemeOpen(true)}
+                  onMouseLeave={() => setThemeOpen(false)}
+                >
                   {theme === "dark" ? (
-                    <Moon className="mr-2 h-4 w-4" />
+                    <Moon className="text-muted-foreground h-4 w-4" />
                   ) : (
-                    <Sun className="mr-2 h-4 w-4" />
+                    <Sun className="text-muted-foreground h-4 w-4" />
                   )}
-                  <span>{t.settings.theme}</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
+                  <span className="flex-1 text-left">{t.settings.theme}</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  side="right"
+                  onMouseEnter={() => setThemeOpen(true)}
+                  onMouseLeave={() => setThemeOpen(false)}
+                >
                   <DropdownMenuItem onClick={() => setTheme("light")}>
                     <Sun className="mr-2 h-4 w-4" />
                     {t.settings.light}
@@ -204,20 +253,30 @@ export function AppSidebar({
                     <Moon className="mr-2 h-4 w-4" />
                     {t.settings.dark}
                   </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Languages className="mr-2 h-4 w-4" />
-                  <span>{t.settings.language}</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {/* Language dropdown - hover trigger */}
+              <DropdownMenu open={languageOpen} onOpenChange={setLanguageOpen}>
+                <DropdownMenuTrigger
+                  className="hover:bg-accent flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm"
+                  onMouseEnter={() => setLanguageOpen(true)}
+                  onMouseLeave={() => setLanguageOpen(false)}
+                >
+                  <Languages className="text-muted-foreground h-4 w-4" />
+                  <span className="flex-1 text-left">{t.settings.language}</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  side="right"
+                  onMouseEnter={() => setLanguageOpen(true)}
+                  onMouseLeave={() => setLanguageOpen(false)}
+                >
                   <DropdownMenuItem onClick={() => setLocale("en")}>English</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocale("zh")}>繁體中文</DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CollapsibleContent>
+          </Collapsible>
         </nav>
       </div>
     </aside>

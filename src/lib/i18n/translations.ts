@@ -17,6 +17,16 @@ export const translations = {
       signInWith: "Sign in with",
       welcomeBack: "Welcome back",
       connectAccounts: "Connect your email accounts",
+      linkAccount: {
+        title: "Link Account",
+        description: "Add another email account to your profile",
+        linkGoogle: "Link Google Account",
+        linkMicrosoft: "Link Microsoft Account",
+        success: "Account linked successfully",
+        error: "Failed to link account",
+        alreadyLinked: "This account is already linked to another user",
+        back: "Back to Dashboard",
+      },
     },
     sidebar: {
       inbox: "Inbox",
@@ -101,6 +111,16 @@ export const translations = {
       signInWith: "使用以下方式登入",
       welcomeBack: "歡迎回來",
       connectAccounts: "連結你的電子郵件帳戶",
+      linkAccount: {
+        title: "連結帳戶",
+        description: "將其他郵件帳戶添加到您的個人檔案",
+        linkGoogle: "連結 Google 帳戶",
+        linkMicrosoft: "連結 Microsoft 帳戶",
+        success: "帳戶連結成功",
+        error: "帳戶連結失敗",
+        alreadyLinked: "此帳戶已連結到其他用戶",
+        back: "返回主畫面",
+      },
     },
     sidebar: {
       inbox: "收件匣",
