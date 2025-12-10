@@ -276,6 +276,15 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
     });
   }, []);
 
+  // Prepend new emails to the list (for polling)
+  const prependEmails = React.useCallback((newEmails: Email[]) => {
+    setEmails((prev) => {
+      const existingIds = new Set(prev.map((e) => e.id));
+      const uniqueNewEmails = newEmails.filter((e) => !existingIds.has(e.id));
+      return [...uniqueNewEmails, ...prev];
+    });
+  }, []);
+
   return {
     emails,
     // Show loading if actively loading OR if current params don't match last loaded params
@@ -288,6 +297,7 @@ export function useEmails({ accountId, folderId, query, category = "all" }: UseE
     updateEmail,
     removeEmail,
     restoreEmail,
+    prependEmails,
   };
 }
 

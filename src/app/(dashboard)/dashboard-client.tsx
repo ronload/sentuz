@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useFolders, useEmails, useEmailThread, useEmailActions } from "@/hooks/use-emails";
 import { useInitialData } from "@/hooks/use-initial-data";
+import { useEmailPolling } from "@/hooks/use-email-polling";
 import { useI18n } from "@/lib/i18n";
 
 interface User {
@@ -68,6 +69,9 @@ export function DashboardClient({ user }: DashboardClientProps) {
   // Track if we should use initial data or fetch new data
   const [useInitialEmails, setUseInitialEmails] = React.useState(true);
 
+  // New email IDs for animation
+  const [newEmailIds, setNewEmailIds] = React.useState<Set<string>>(new Set());
+
   // Initial data loading - parallel fetch of accounts, folders, and emails
   const {
     accounts: initialAccounts,
@@ -79,6 +83,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
     updateEmail: updateInitialEmail,
     removeEmail: removeInitialEmail,
     restoreEmail: restoreInitialEmail,
+    prependEmails: prependInitialEmails,
   } = useInitialData();
 
   // Subsequent data loading - for folder changes, search, etc.
@@ -94,6 +99,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
     updateEmail: updateSubsequentEmail,
     removeEmail: removeSubsequentEmail,
     restoreEmail: restoreSubsequentEmail,
+    prependEmails: prependSubsequentEmails,
   } = useEmails({
     accountId: useInitialEmails ? undefined : selectedAccountId,
     folderId: useInitialEmails ? undefined : selectedFolderId,
@@ -109,6 +115,22 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const updateEmail = useInitialEmails ? updateInitialEmail : updateSubsequentEmail;
   const removeEmail = useInitialEmails ? removeInitialEmail : removeSubsequentEmail;
   const restoreEmail = useInitialEmails ? restoreInitialEmail : restoreSubsequentEmail;
+  const prependEmails = useInitialEmails ? prependInitialEmails : prependSubsequentEmails;
+
+  // Email polling for realtime updates
+  useEmailPolling({
+    accountId: selectedAccountId,
+    folderId: selectedFolderId,
+    currentEmails: emails,
+    enabled: !searchQuery && emailCategory === "all" && !emailsLoading,
+    interval: 30000,
+    onNewEmails: (newEmails) => {
+      prependEmails(newEmails);
+      setNewEmailIds(new Set(newEmails.map((e) => e.id)));
+      // Clear animation after it completes
+      setTimeout(() => setNewEmailIds(new Set()), 500);
+    },
+  });
 
   const { messages: threadMessages, isLoading: threadLoading } = useEmailThread(
     selectedAccountId,
@@ -353,6 +375,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
               hasMore={hasMore}
               currentAccountEmail={selectedAccount?.email}
               currentAccountImage={selectedAccount?.image}
+              newEmailIds={newEmailIds}
             />
           </div>
         </div>

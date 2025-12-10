@@ -41,6 +41,7 @@ interface UseInitialDataReturn {
   updateEmail: (emailId: string, updates: Partial<Email>) => void;
   removeEmail: (emailId: string) => void;
   restoreEmail: (email: Email, index?: number) => void;
+  prependEmails: (newEmails: Email[]) => void;
 }
 
 export function useInitialData(): UseInitialDataReturn {
@@ -105,6 +106,15 @@ export function useInitialData(): UseInitialDataReturn {
     });
   }, []);
 
+  // Prepend new emails to the list (for polling)
+  const prependEmails = React.useCallback((newEmails: Email[]) => {
+    setEmails((prev) => {
+      const existingIds = new Set(prev.map((e) => e.id));
+      const uniqueNewEmails = newEmails.filter((e) => !existingIds.has(e.id));
+      return [...uniqueNewEmails, ...prev];
+    });
+  }, []);
+
   return {
     accounts,
     folders,
@@ -120,5 +130,6 @@ export function useInitialData(): UseInitialDataReturn {
     updateEmail,
     removeEmail,
     restoreEmail,
+    prependEmails,
   };
 }

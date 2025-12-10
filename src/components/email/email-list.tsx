@@ -47,6 +47,7 @@ interface EmailListProps {
   hasMore?: boolean;
   currentAccountEmail?: string;
   currentAccountImage?: string;
+  newEmailIds?: Set<string>;
 }
 
 const CATEGORIES: { value: EmailCategory; label: string }[] = [
@@ -193,6 +194,7 @@ export function EmailList({
   hasMore,
   currentAccountEmail,
   currentAccountImage,
+  newEmailIds,
 }: EmailListProps) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -247,30 +249,34 @@ export function EmailList({
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {emails.map((email) => (
-            <EmailCard
+            <div
               key={email.id}
-              id={email.id}
-              subject={email.subject}
-              from={email.from}
-              snippet={email.snippet}
-              receivedAt={email.receivedAt}
-              isRead={email.isRead}
-              isStarred={email.isStarred}
-              hasAttachments={email.hasAttachments}
-              isSelected={selectedEmailId === email.id}
-              currentAccountEmail={currentAccountEmail}
-              currentAccountImage={currentAccountImage}
-              unsubscribeUrl={email.unsubscribeUrl}
-              isUnsubscribed={unsubscribedIds?.has(email.id)}
-              onClick={() => onSelectEmail?.(email)}
-              onStar={() => onStarEmail?.(email.id, !email.isStarred)}
-              onMarkAsRead={() => onMarkAsRead?.(email.id)}
-              onMarkAsUnread={() => onMarkAsUnread?.(email.id)}
-              onDelete={() => onDeleteEmail?.(email.id)}
-              onReply={() => onReplyEmail?.(email.id)}
-              onForward={() => onForwardEmail?.(email.id)}
-              onUnsubscribe={() => onUnsubscribeEmail?.(email)}
-            />
+              className={newEmailIds?.has(email.id) ? "animate-slide-in-top" : ""}
+            >
+              <EmailCard
+                id={email.id}
+                subject={email.subject}
+                from={email.from}
+                snippet={email.snippet}
+                receivedAt={email.receivedAt}
+                isRead={email.isRead}
+                isStarred={email.isStarred}
+                hasAttachments={email.hasAttachments}
+                isSelected={selectedEmailId === email.id}
+                currentAccountEmail={currentAccountEmail}
+                currentAccountImage={currentAccountImage}
+                unsubscribeUrl={email.unsubscribeUrl}
+                isUnsubscribed={unsubscribedIds?.has(email.id)}
+                onClick={() => onSelectEmail?.(email)}
+                onStar={() => onStarEmail?.(email.id, !email.isStarred)}
+                onMarkAsRead={() => onMarkAsRead?.(email.id)}
+                onMarkAsUnread={() => onMarkAsUnread?.(email.id)}
+                onDelete={() => onDeleteEmail?.(email.id)}
+                onReply={() => onReplyEmail?.(email.id)}
+                onForward={() => onForwardEmail?.(email.id)}
+                onUnsubscribe={() => onUnsubscribeEmail?.(email)}
+              />
+            </div>
           ))}
           {isLoading && (
             <div className="py-4 text-center">
