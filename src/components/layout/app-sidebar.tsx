@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import {
   Inbox,
   Star,
@@ -10,7 +9,7 @@ import {
   AlertTriangle,
   Trash2,
   Settings,
-  ChevronDown,
+  ChevronsUpDown,
   Plus,
   Sun,
   Moon,
@@ -76,7 +75,7 @@ export function AppSidebar({
             </AvatarFallback>
           </Avatar>
           <span className="flex-1 truncate text-left text-sm">{displayEmail}</span>
-          <ChevronDown className="text-muted-foreground h-4 w-4 shrink-0" />
+          <ChevronsUpDown className="text-muted-foreground h-4 w-4 shrink-0" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
           {accounts.map((account) => (
