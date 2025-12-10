@@ -29,7 +29,7 @@ interface EmailCardStackProps {
 const springTransition = {
   type: "spring" as const,
   stiffness: 200,
-  damping: 20,
+  damping: 25,
 };
 
 export function EmailCardStack({

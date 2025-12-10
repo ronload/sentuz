@@ -35,7 +35,7 @@ export async function GET() {
     // 3. Fetch folders and emails in parallel
     const [folders, emailsResponse] = await Promise.all([
       emailService.listFolders(),
-      emailService.listEmails({ folderId: "INBOX", maxResults: 20 }),
+      emailService.listEmails({ folderId: "INBOX", maxResults: 400 }),
     ]);
 
     // Find the inbox folder ID
