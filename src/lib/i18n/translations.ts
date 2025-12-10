@@ -59,6 +59,12 @@ export const translations = {
       unsubscribeConfirmTitle: "Confirm Unsubscribe",
       unsubscribeConfirmMessage: "Are you sure you want to unsubscribe from this mailing list?",
       unsubscribed: "Unsubscribed",
+      stack: {
+        today: "Today",
+        yesterday: "Yesterday",
+        thisWeek: "This Week",
+        older: "Older",
+      },
     },
     settings: {
       settings: "Settings",
@@ -129,6 +135,12 @@ export const translations = {
       unsubscribeConfirmTitle: "確認取消訂閱",
       unsubscribeConfirmMessage: "確定要取消訂閱此郵件列表嗎？",
       unsubscribed: "已取消訂閱",
+      stack: {
+        today: "Today",
+        yesterday: "Yesterday",
+        thisWeek: "This Week",
+        older: "Older",
+      },
     },
     settings: {
       settings: "設定",

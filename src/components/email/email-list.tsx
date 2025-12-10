@@ -5,6 +5,7 @@ import { Inbox, LayoutList, Layers } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { EmailCard } from "./email-card";
+import { EmailCardStack } from "./email-card-stack";
 import { useI18n } from "@/lib/i18n";
 
 export type EmailViewMode = "list" | "stack";
@@ -56,6 +57,48 @@ const CATEGORIES: { value: EmailCategory; label: string }[] = [
   { value: "updates", label: "Updates" },
   { value: "promotions", label: "Promotions" },
 ];
+
+type DateCategory = "today" | "yesterday" | "thisWeek" | "older";
+
+interface CategorizedEmails {
+  today: Email[];
+  yesterday: Email[];
+  thisWeek: Email[];
+  older: Email[];
+}
+
+function categorizeEmailsByDate(emails: Email[]): CategorizedEmails {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const weekStart = new Date(today);
+  weekStart.setDate(weekStart.getDate() - today.getDay());
+
+  const result: CategorizedEmails = {
+    today: [],
+    yesterday: [],
+    thisWeek: [],
+    older: [],
+  };
+
+  for (const email of emails) {
+    const emailDate = new Date(email.receivedAt);
+    const emailDay = new Date(emailDate.getFullYear(), emailDate.getMonth(), emailDate.getDate());
+
+    if (emailDay.getTime() === today.getTime()) {
+      result.today.push(email);
+    } else if (emailDay.getTime() === yesterday.getTime()) {
+      result.yesterday.push(email);
+    } else if (emailDay >= weekStart) {
+      result.thisWeek.push(email);
+    } else {
+      result.older.push(email);
+    }
+  }
+
+  return result;
+}
 
 function CategoryFilter({
   category,
@@ -196,6 +239,7 @@ export function EmailList({
   currentAccountImage,
   newEmailIds,
 }: EmailListProps) {
+  const { t } = useI18n();
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const handleScroll = React.useCallback(() => {
@@ -239,6 +283,60 @@ export function EmailList({
     );
   }
 
+  // Categorize emails for stack mode
+  const categorizedEmails = viewMode === "stack" ? categorizeEmailsByDate(emails) : null;
+
+  // Stack mode rendering
+  if (viewMode === "stack" && categorizedEmails) {
+    const categories: { key: DateCategory; title: string }[] = [
+      { key: "today", title: t.email.stack.today },
+      { key: "yesterday", title: t.email.stack.yesterday },
+      { key: "thisWeek", title: t.email.stack.thisWeek },
+      { key: "older", title: t.email.stack.older },
+    ];
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        {toolbar}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {categories.map(({ key, title }) => (
+              <EmailCardStack
+                key={key}
+                title={title}
+                emails={categorizedEmails[key]}
+                defaultExpanded={key === "today"}
+                selectedEmailId={selectedEmailId}
+                currentAccountEmail={currentAccountEmail}
+                currentAccountImage={currentAccountImage}
+                unsubscribedIds={unsubscribedIds}
+                newEmailIds={newEmailIds}
+                onSelectEmail={onSelectEmail}
+                onStarEmail={onStarEmail}
+                onMarkAsRead={onMarkAsRead}
+                onMarkAsUnread={onMarkAsUnread}
+                onDeleteEmail={onDeleteEmail}
+                onReplyEmail={onReplyEmail}
+                onForwardEmail={onForwardEmail}
+                onUnsubscribeEmail={onUnsubscribeEmail}
+              />
+            ))}
+            {isLoading && (
+              <div className="py-4 text-center">
+                <Skeleton className="mx-auto h-8 w-8 rounded-full" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // List mode rendering
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {toolbar}
