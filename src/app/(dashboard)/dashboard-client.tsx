@@ -25,6 +25,14 @@ import { useInitialData } from "@/hooks/use-initial-data";
 import { useEmailPolling } from "@/hooks/use-email-polling";
 import { useI18n } from "@/lib/i18n";
 
+// localStorage keys for persisting user preferences
+const STORAGE_KEYS = {
+  SELECTED_ACCOUNT: "sentuz-selected-account",
+  SELECTED_FOLDER_TYPE: "sentuz-selected-folder-type",
+} as const;
+
+type FolderType = "inbox" | "starred" | "sent" | "drafts" | "important" | "spam" | "trash";
+
 interface User {
   id: string;
   name?: string | null;
@@ -38,11 +46,26 @@ interface DashboardClientProps {
 
 export function DashboardClient({ user }: DashboardClientProps) {
   const { t } = useI18n();
-  const [selectedAccountId, setSelectedAccountId] = React.useState<string>();
+  const [selectedAccountId, setSelectedAccountIdState] = React.useState<string>();
   const [selectedFolderId, setSelectedFolderId] = React.useState<string>();
-  const [selectedFolderType, setSelectedFolderType] = React.useState<
-    "inbox" | "starred" | "sent" | "drafts" | "important" | "spam" | "trash"
-  >("inbox");
+  const [selectedFolderType, setSelectedFolderTypeState] = React.useState<FolderType>(() => {
+    if (typeof window === "undefined") return "inbox";
+    return (localStorage.getItem(STORAGE_KEYS.SELECTED_FOLDER_TYPE) as FolderType) || "inbox";
+  });
+
+  // Wrapper for setSelectedAccountId that persists to localStorage
+  const setSelectedAccountId = React.useCallback((id: string | undefined) => {
+    setSelectedAccountIdState(id);
+    if (id) {
+      localStorage.setItem(STORAGE_KEYS.SELECTED_ACCOUNT, id);
+    }
+  }, []);
+
+  // Wrapper for setSelectedFolderType that persists to localStorage
+  const setSelectedFolderType = React.useCallback((type: FolderType) => {
+    setSelectedFolderTypeState(type);
+    localStorage.setItem(STORAGE_KEYS.SELECTED_FOLDER_TYPE, type);
+  }, []);
   const [selectedEmailId, setSelectedEmailId] = React.useState<string>();
   const [selectedThreadId, setSelectedThreadId] = React.useState<string>();
   const [searchQuery, setSearchQuery] = React.useState<string>();
@@ -138,18 +161,44 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const { markAsRead, markAsUnread, star, unstar, deleteEmail, sendEmail, reply, forward } =
     useEmailActions(selectedAccountId);
 
-  // Set initial selection from initial data
+  // Set initial selection from initial data (with localStorage persistence)
   React.useEffect(() => {
-    if (!initialLoading && defaultAccountId && !selectedAccountId) {
-      setSelectedAccountId(defaultAccountId);
+    if (!initialLoading && accounts.length > 0 && !selectedAccountId) {
+      const storedAccountId = localStorage.getItem(STORAGE_KEYS.SELECTED_ACCOUNT);
+      const isValidStoredAccount =
+        storedAccountId && accounts.some((acc) => acc.id === storedAccountId);
+
+      if (isValidStoredAccount) {
+        setSelectedAccountId(storedAccountId);
+        // If using stored account (not default), switch to subsequent data
+        if (storedAccountId !== defaultAccountId) {
+          setUseInitialEmails(false);
+        }
+      } else if (defaultAccountId) {
+        setSelectedAccountId(defaultAccountId);
+      }
     }
-  }, [initialLoading, defaultAccountId, selectedAccountId]);
+  }, [initialLoading, accounts, defaultAccountId, selectedAccountId, setSelectedAccountId]);
 
   React.useEffect(() => {
-    if (!initialLoading && defaultFolderId && !selectedFolderId) {
-      setSelectedFolderId(defaultFolderId);
+    if (!initialLoading && folders.length > 0 && !selectedFolderId) {
+      const storedFolderType = localStorage.getItem(
+        STORAGE_KEYS.SELECTED_FOLDER_TYPE
+      ) as FolderType | null;
+      const targetFolderType = storedFolderType || "inbox";
+      const matchingFolder = folders.find((f) => f.type === targetFolderType);
+
+      if (matchingFolder) {
+        setSelectedFolderId(matchingFolder.id);
+        // If using stored folder type (not inbox), switch to subsequent data
+        if (storedFolderType && storedFolderType !== "inbox") {
+          setUseInitialEmails(false);
+        }
+      } else if (defaultFolderId) {
+        setSelectedFolderId(defaultFolderId);
+      }
     }
-  }, [initialLoading, defaultFolderId, selectedFolderId]);
+  }, [initialLoading, folders, defaultFolderId, selectedFolderId]);
 
   React.useEffect(() => {
     if (selectedEmailId && threadMessages.length > 0) {
