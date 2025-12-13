@@ -3,8 +3,7 @@
 import * as React from "react";
 import type { Email, Folder, Account } from "./use-emails";
 
-interface InitialDataResponse {
-  accounts: Account[];
+interface AccountDataResponse {
   folders: Folder[];
   emails: {
     messages: Array<{
@@ -21,36 +20,41 @@ interface InitialDataResponse {
     }>;
     nextPageToken?: string;
   };
+  defaultFolderId: string;
+}
+
+interface InitialDataResponse {
+  accounts: Account[];
+  accountDataMap: Record<string, AccountDataResponse>;
   defaultAccountId?: string;
-  defaultFolderId?: string;
+}
+
+export interface AccountData {
+  folders: Folder[];
+  emails: Email[];
+  defaultFolderId: string;
+  nextPageToken?: string;
 }
 
 interface UseInitialDataReturn {
   accounts: Account[];
-  folders: Folder[];
-  emails: Email[];
+  accountDataMap: Map<string, AccountData>;
   defaultAccountId?: string;
-  defaultFolderId?: string;
   isLoading: boolean;
   error: Error | null;
-  nextPageToken?: string;
   // Methods for updating state after initial load
   setAccounts: React.Dispatch<React.SetStateAction<Account[]>>;
-  setFolders: React.Dispatch<React.SetStateAction<Folder[]>>;
-  setEmails: React.Dispatch<React.SetStateAction<Email[]>>;
-  updateEmail: (emailId: string, updates: Partial<Email>) => void;
-  removeEmail: (emailId: string) => void;
-  restoreEmail: (email: Email, index?: number) => void;
-  prependEmails: (newEmails: Email[]) => void;
+  getAccountData: (accountId: string) => AccountData | undefined;
+  updateAccountEmail: (accountId: string, emailId: string, updates: Partial<Email>) => void;
+  removeAccountEmail: (accountId: string, emailId: string) => void;
+  restoreAccountEmail: (accountId: string, email: Email, index?: number) => void;
+  prependAccountEmails: (accountId: string, newEmails: Email[]) => void;
 }
 
 export function useInitialData(): UseInitialDataReturn {
   const [accounts, setAccounts] = React.useState<Account[]>([]);
-  const [folders, setFolders] = React.useState<Folder[]>([]);
-  const [emails, setEmails] = React.useState<Email[]>([]);
+  const [accountDataMap, setAccountDataMap] = React.useState<Map<string, AccountData>>(new Map());
   const [defaultAccountId, setDefaultAccountId] = React.useState<string>();
-  const [defaultFolderId, setDefaultFolderId] = React.useState<string>();
-  const [nextPageToken, setNextPageToken] = React.useState<string>();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
@@ -64,16 +68,22 @@ export function useInitialData(): UseInitialDataReturn {
         const data: InitialDataResponse = await response.json();
 
         setAccounts(data.accounts);
-        setFolders(data.folders);
-        setEmails(
-          data.emails.messages.map((email) => ({
-            ...email,
-            receivedAt: new Date(email.receivedAt),
-          }))
-        );
         setDefaultAccountId(data.defaultAccountId);
-        setDefaultFolderId(data.defaultFolderId);
-        setNextPageToken(data.emails.nextPageToken);
+
+        // Convert accountDataMap to Map with parsed emails
+        const parsedMap = new Map<string, AccountData>();
+        for (const [accountId, accountData] of Object.entries(data.accountDataMap)) {
+          parsedMap.set(accountId, {
+            folders: accountData.folders,
+            emails: accountData.emails.messages.map((email) => ({
+              ...email,
+              receivedAt: new Date(email.receivedAt),
+            })),
+            defaultFolderId: accountData.defaultFolderId,
+            nextPageToken: accountData.emails.nextPageToken,
+          });
+        }
+        setAccountDataMap(parsedMap);
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Unknown error"));
       } finally {
@@ -84,52 +94,99 @@ export function useInitialData(): UseInitialDataReturn {
     fetchInitialData();
   }, []);
 
-  // Optimistic update helper
-  const updateEmail = React.useCallback((emailId: string, updates: Partial<Email>) => {
-    setEmails((prev) => prev.map((e) => (e.id === emailId ? { ...e, ...updates } : e)));
-  }, []);
+  // Get account data by ID
+  const getAccountData = React.useCallback(
+    (accountId: string) => {
+      return accountDataMap.get(accountId);
+    },
+    [accountDataMap]
+  );
 
-  // Remove email from list
-  const removeEmail = React.useCallback((emailId: string) => {
-    setEmails((prev) => prev.filter((e) => e.id !== emailId));
-  }, []);
+  // Optimistic update helper for specific account
+  const updateAccountEmail = React.useCallback(
+    (accountId: string, emailId: string, updates: Partial<Email>) => {
+      setAccountDataMap((prev) => {
+        const newMap = new Map(prev);
+        const accountData = newMap.get(accountId);
+        if (accountData) {
+          newMap.set(accountId, {
+            ...accountData,
+            emails: accountData.emails.map((e) => (e.id === emailId ? { ...e, ...updates } : e)),
+          });
+        }
+        return newMap;
+      });
+    },
+    []
+  );
 
-  // Restore a previously removed email
-  const restoreEmail = React.useCallback((email: Email, index?: number) => {
-    setEmails((prev) => {
-      if (index !== undefined && index >= 0 && index <= prev.length) {
-        const newEmails = [...prev];
-        newEmails.splice(index, 0, email);
-        return newEmails;
+  // Remove email from specific account's list
+  const removeAccountEmail = React.useCallback((accountId: string, emailId: string) => {
+    setAccountDataMap((prev) => {
+      const newMap = new Map(prev);
+      const accountData = newMap.get(accountId);
+      if (accountData) {
+        newMap.set(accountId, {
+          ...accountData,
+          emails: accountData.emails.filter((e) => e.id !== emailId),
+        });
       }
-      return [email, ...prev];
+      return newMap;
     });
   }, []);
 
-  // Prepend new emails to the list (for polling)
-  const prependEmails = React.useCallback((newEmails: Email[]) => {
-    setEmails((prev) => {
-      const existingIds = new Set(prev.map((e) => e.id));
-      const uniqueNewEmails = newEmails.filter((e) => !existingIds.has(e.id));
-      return [...uniqueNewEmails, ...prev];
+  // Restore a previously removed email to specific account
+  const restoreAccountEmail = React.useCallback(
+    (accountId: string, email: Email, index?: number) => {
+      setAccountDataMap((prev) => {
+        const newMap = new Map(prev);
+        const accountData = newMap.get(accountId);
+        if (accountData) {
+          const newEmails = [...accountData.emails];
+          if (index !== undefined && index >= 0 && index <= newEmails.length) {
+            newEmails.splice(index, 0, email);
+          } else {
+            newEmails.unshift(email);
+          }
+          newMap.set(accountId, {
+            ...accountData,
+            emails: newEmails,
+          });
+        }
+        return newMap;
+      });
+    },
+    []
+  );
+
+  // Prepend new emails to specific account's list (for polling)
+  const prependAccountEmails = React.useCallback((accountId: string, newEmails: Email[]) => {
+    setAccountDataMap((prev) => {
+      const newMap = new Map(prev);
+      const accountData = newMap.get(accountId);
+      if (accountData) {
+        const existingIds = new Set(accountData.emails.map((e) => e.id));
+        const uniqueNewEmails = newEmails.filter((e) => !existingIds.has(e.id));
+        newMap.set(accountId, {
+          ...accountData,
+          emails: [...uniqueNewEmails, ...accountData.emails],
+        });
+      }
+      return newMap;
     });
   }, []);
 
   return {
     accounts,
-    folders,
-    emails,
+    accountDataMap,
     defaultAccountId,
-    defaultFolderId,
     isLoading,
     error,
-    nextPageToken,
     setAccounts,
-    setFolders,
-    setEmails,
-    updateEmail,
-    removeEmail,
-    restoreEmail,
-    prependEmails,
+    getAccountData,
+    updateAccountEmail,
+    removeAccountEmail,
+    restoreAccountEmail,
+    prependAccountEmails,
   };
 }

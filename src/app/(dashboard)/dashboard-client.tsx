@@ -90,26 +90,32 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const [unsubscribedIds, setUnsubscribedIds] = React.useState<Set<string>>(new Set());
 
   // Track if we should use initial data or fetch new data
+  // Only need to fetch when: folder changes from INBOX, or search query is applied
   const [useInitialEmails, setUseInitialEmails] = React.useState(true);
 
   // New email IDs for animation
   const [newEmailIds, setNewEmailIds] = React.useState<Set<string>>(new Set());
 
-  // Initial data loading - parallel fetch of accounts, folders, and emails
+  // Initial data loading - parallel fetch of ALL accounts' folders and emails
   const {
-    accounts: initialAccounts,
-    folders: initialFolders,
-    emails: initialEmails,
+    accounts,
+    accountDataMap,
     defaultAccountId,
-    defaultFolderId,
     isLoading: initialLoading,
-    updateEmail: updateInitialEmail,
-    removeEmail: removeInitialEmail,
-    restoreEmail: restoreInitialEmail,
-    prependEmails: prependInitialEmails,
+    getAccountData,
+    updateAccountEmail,
+    removeAccountEmail,
+    restoreAccountEmail,
+    prependAccountEmails,
   } = useInitialData();
 
-  // Subsequent data loading - for folder changes, search, etc.
+  // Get current account's initial data
+  const currentAccountData = selectedAccountId ? getAccountData(selectedAccountId) : undefined;
+  const initialFolders = currentAccountData?.folders ?? [];
+  const initialEmails = currentAccountData?.emails ?? [];
+  const defaultFolderId = currentAccountData?.defaultFolderId;
+
+  // Subsequent data loading - for folder changes from INBOX, search, etc.
   const { folders: subsequentFolders } = useFolders(
     useInitialEmails ? undefined : selectedAccountId
   );
@@ -129,15 +135,55 @@ export function DashboardClient({ user }: DashboardClientProps) {
     query: searchQuery,
   });
 
-  // Use initial data until user changes folder/search/category
-  const accounts = initialAccounts;
+  // Use initial data until user changes folder from INBOX or applies search
   const folders = useInitialEmails ? initialFolders : subsequentFolders;
   const emails = useInitialEmails ? initialEmails : subsequentEmails;
   const emailsLoading = useInitialEmails ? initialLoading : subsequentEmailsLoading;
-  const updateEmail = useInitialEmails ? updateInitialEmail : updateSubsequentEmail;
-  const removeEmail = useInitialEmails ? removeInitialEmail : removeSubsequentEmail;
-  const restoreEmail = useInitialEmails ? restoreInitialEmail : restoreSubsequentEmail;
-  const prependEmails = useInitialEmails ? prependInitialEmails : prependSubsequentEmails;
+
+  // Wrap account-specific methods to bind current accountId
+  const updateEmail = React.useCallback(
+    (emailId: string, updates: Partial<Email>) => {
+      if (useInitialEmails && selectedAccountId) {
+        updateAccountEmail(selectedAccountId, emailId, updates);
+      } else {
+        updateSubsequentEmail(emailId, updates);
+      }
+    },
+    [useInitialEmails, selectedAccountId, updateAccountEmail, updateSubsequentEmail]
+  );
+
+  const removeEmail = React.useCallback(
+    (emailId: string) => {
+      if (useInitialEmails && selectedAccountId) {
+        removeAccountEmail(selectedAccountId, emailId);
+      } else {
+        removeSubsequentEmail(emailId);
+      }
+    },
+    [useInitialEmails, selectedAccountId, removeAccountEmail, removeSubsequentEmail]
+  );
+
+  const restoreEmail = React.useCallback(
+    (email: Email, index?: number) => {
+      if (useInitialEmails && selectedAccountId) {
+        restoreAccountEmail(selectedAccountId, email, index);
+      } else {
+        restoreSubsequentEmail(email, index);
+      }
+    },
+    [useInitialEmails, selectedAccountId, restoreAccountEmail, restoreSubsequentEmail]
+  );
+
+  const prependEmails = React.useCallback(
+    (newEmails: Email[]) => {
+      if (useInitialEmails && selectedAccountId) {
+        prependAccountEmails(selectedAccountId, newEmails);
+      } else {
+        prependSubsequentEmails(newEmails);
+      }
+    },
+    [useInitialEmails, selectedAccountId, prependAccountEmails, prependSubsequentEmails]
+  );
 
   // Email polling for realtime updates
   useEmailPolling({
@@ -170,15 +216,23 @@ export function DashboardClient({ user }: DashboardClientProps) {
 
       if (isValidStoredAccount) {
         setSelectedAccountId(storedAccountId);
-        // If using stored account (not default), switch to subsequent data
-        if (storedAccountId !== defaultAccountId) {
-          setUseInitialEmails(false);
-        }
+        // Check if this account has preloaded data - if so, use it
+        const hasPreloadedData = accountDataMap.has(storedAccountId);
+        setUseInitialEmails(hasPreloadedData);
       } else if (defaultAccountId) {
         setSelectedAccountId(defaultAccountId);
+        // Default account always has preloaded data
+        setUseInitialEmails(true);
       }
     }
-  }, [initialLoading, accounts, defaultAccountId, selectedAccountId, setSelectedAccountId]);
+  }, [
+    initialLoading,
+    accounts,
+    defaultAccountId,
+    selectedAccountId,
+    setSelectedAccountId,
+    accountDataMap,
+  ]);
 
   React.useEffect(() => {
     if (!initialLoading && folders.length > 0 && !selectedFolderId) {
@@ -190,7 +244,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
 
       if (matchingFolder) {
         setSelectedFolderId(matchingFolder.id);
-        // If using stored folder type (not inbox), switch to subsequent data
+        // If using stored folder type (not inbox), need to fetch that folder's emails
         if (storedFolderType && storedFolderType !== "inbox") {
           setUseInitialEmails(false);
         }
@@ -367,8 +421,13 @@ export function DashboardClient({ user }: DashboardClientProps) {
         selectedAccountId={selectedAccountId}
         selectedFolder={selectedFolderType}
         onSelectAccount={(id) => {
-          setUseInitialEmails(false);
+          // Check if the account has preloaded data
+          const hasPreloadedData = accountDataMap.has(id);
+          // Use initial data if available and folder type is inbox
+          setUseInitialEmails(hasPreloadedData && selectedFolderType === "inbox");
           setSelectedAccountId(id);
+          // Reset folder to inbox when switching accounts
+          setSelectedFolderType("inbox");
           setSelectedFolderId(undefined);
           setSelectedEmailId(undefined);
           setSelectedThreadId(undefined);

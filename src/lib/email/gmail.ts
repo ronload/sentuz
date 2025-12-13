@@ -60,7 +60,7 @@ export class GmailService implements IEmailService {
   async listEmails(params: ListEmailsParams): Promise<ListEmailsResponse> {
     const response = await this.gmail.users.messages.list({
       userId: "me",
-      maxResults: params.maxResults || 20,
+      maxResults: params.maxResults || 200,
       pageToken: params.pageToken,
       q: params.query,
       labelIds: params.folderId ? [params.folderId] : undefined,

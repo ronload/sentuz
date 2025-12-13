@@ -19,28 +19,59 @@ export async function GET() {
   if (accounts.length === 0) {
     return NextResponse.json({
       accounts: [],
-      folders: [],
-      emails: { messages: [], nextPageToken: undefined },
+      accountDataMap: {},
       defaultAccountId: undefined,
-      defaultFolderId: undefined,
     });
   }
 
   const defaultAccount = accounts[0];
 
   try {
-    // 2. Create email service once (with account object to avoid duplicate query)
-    const emailService = await createEmailServiceFromAccount(defaultAccount);
+    // 2. Parallel fetch folders and emails for ALL accounts
+    const accountDataPromises = accounts.map(async (account) => {
+      try {
+        const emailService = await createEmailServiceFromAccount(account);
+        const [folders, emailsResponse] = await Promise.all([
+          emailService.listFolders(),
+          emailService.listEmails({ folderId: "INBOX", maxResults: 200 }),
+        ]);
+        const inboxFolder = folders.find((f) => f.type === "inbox");
+        return {
+          accountId: account.id,
+          folders,
+          emails: emailsResponse,
+          defaultFolderId: inboxFolder?.id || "INBOX",
+        };
+      } catch (error) {
+        console.error(`Error fetching data for account ${account.id}:`, error);
+        return {
+          accountId: account.id,
+          folders: [],
+          emails: { messages: [], nextPageToken: undefined },
+          defaultFolderId: "INBOX",
+        };
+      }
+    });
 
-    // 3. Fetch folders and emails in parallel
-    const [folders, emailsResponse] = await Promise.all([
-      emailService.listFolders(),
-      emailService.listEmails({ folderId: "INBOX", maxResults: 500 }),
-    ]);
+    const accountDataArray = await Promise.all(accountDataPromises);
 
-    // Find the inbox folder ID
-    const inboxFolder = folders.find((f) => f.type === "inbox");
-    const defaultFolderId = inboxFolder?.id || "INBOX";
+    // 3. Convert array to map for easy lookup
+    const accountDataMap: Record<
+      string,
+      {
+        folders: (typeof accountDataArray)[number]["folders"];
+        emails: (typeof accountDataArray)[number]["emails"];
+        defaultFolderId: string;
+      }
+    > = {};
+
+    for (const data of accountDataArray) {
+      accountDataMap[data.accountId] = {
+        folders: data.folders,
+        emails: data.emails,
+        defaultFolderId: data.defaultFolderId,
+      };
+    }
 
     // 4. Return all data in one response
     return NextResponse.json({
@@ -51,10 +82,8 @@ export async function GET() {
         email: acc.email,
         image: acc.image,
       })),
-      folders,
-      emails: emailsResponse,
+      accountDataMap,
       defaultAccountId: defaultAccount.id,
-      defaultFolderId,
     });
   } catch (error) {
     console.error("Error initializing dashboard:", error);
