@@ -181,10 +181,9 @@ export function EmailCard({
   return (
     <div
       className={cn(
-        "flex cursor-pointer items-center gap-4 rounded-xl px-4 py-4 shadow-sm transition-colors",
+        "flex w-full max-w-full cursor-pointer items-center gap-4 overflow-hidden rounded-xl px-4 py-4 shadow-sm transition-colors",
         isSelected ? "bg-accent" : "bg-card hover:bg-accent"
       )}
-      style={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}
       onClick={onClick}
     >
       <div className="relative shrink-0">
@@ -216,49 +215,24 @@ export function EmailCard({
             </AvatarFallback>
           )}
         </Avatar>
+        {/* TODO: Fix this css below */}
         {!isRead && (
           <div
+            className="absolute rounded-full"
             style={{
-              position: "absolute",
               top: "-2px",
               right: "-2px",
               width: "8px",
               height: "8px",
-              borderRadius: "50%",
               backgroundColor: "#3b82f6",
             }}
           />
         )}
       </div>
-      <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "8px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flex: 1,
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              className={cn("text-sm", !isRead && "font-semibold")}
-              style={{
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {senderName}
-            </div>
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+            <div className={cn("truncate text-sm", !isRead && "font-semibold")}>{senderName}</div>
             {unsubscribeUrl && !isUnsubscribed && (
               <button
                 type="button"
@@ -281,14 +255,7 @@ export function EmailCard({
             {formatRelativeDate(receivedAt)}
           </div>
         </div>
-        <div
-          className={cn("text-sm", isRead ? "text-muted-foreground" : "font-medium")}
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
+        <div className={cn("truncate text-sm", isRead ? "text-muted-foreground" : "font-medium")}>
           {title}
         </div>
         <div

@@ -159,21 +159,17 @@ function DateFilterNav({
   onDateFilterChange?: (filter: DateFilter) => void;
 }) {
   return (
-    <div
-      className="bg-card flex items-center rounded-lg shadow-sm"
-      style={{ padding: "4px", gap: "4px" }}
-    >
+    <div className="bg-card flex items-center gap-1 rounded-lg p-1 shadow-sm">
       {DATE_FILTERS.map((item) => (
         <button
           key={item.value}
           type="button"
           onClick={() => onDateFilterChange?.(item.value)}
-          className={`rounded-md text-sm font-medium transition-colors ${
+          className={`h-7 rounded-md px-3 text-sm font-medium transition-colors ${
             dateFilter === item.value
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
-          style={{ height: "28px", padding: "0 12px" }}
         >
           {item.label}
         </button>

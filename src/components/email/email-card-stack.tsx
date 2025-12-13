@@ -72,7 +72,7 @@ export function EmailCardStack({
         <span className="text-muted-foreground">{title}</span>
         <span className="email-stack-count">{emails.length}</span>
       </motion.button>
-
+      {/* TODO: Fix this inlinecss below */}
       {/* Cards Container - all emails always in DOM */}
       <motion.div
         layout
