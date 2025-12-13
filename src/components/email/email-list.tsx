@@ -175,12 +175,7 @@ function DateFilterNav({
           <span className="text-sm font-medium whitespace-nowrap">{currentLabel}</span>
           <ChevronDown className="text-muted-foreground h-4 w-4 shrink-0" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          style={{
-            zIndex: 99999,
-          }}
-        >
+        <DropdownMenuContent align="start">
           {DATE_FILTERS.map((item) => (
             <DropdownMenuItem
               key={item.value}

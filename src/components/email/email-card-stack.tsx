@@ -115,7 +115,7 @@ export function EmailCardStack({
                 opacity,
                 scale,
                 y,
-                zIndex: emails.length - index,
+                zIndex: Math.min(40, emails.length) - index,
               }}
               transition={{
                 layout: springTransition,
