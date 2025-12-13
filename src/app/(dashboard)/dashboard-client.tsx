@@ -511,12 +511,8 @@ export function DashboardClient({ user }: DashboardClientProps) {
               isMobile && mobileView === "detail" && "hidden"
             )}
           >
-            {/* Searchbar with mobile menu button */}
-            <Header
-              onSearch={handleSearch}
-              onMenuClick={() => setSidebarOpen(true)}
-              showMenuButton={isMobile}
-            />
+            {/* Searchbar */}
+            <Header onSearch={handleSearch} onMenuClick={() => setSidebarOpen(true)} />
 
             {/* Email list */}
             <div className="min-w-0 flex-1 overflow-hidden">
