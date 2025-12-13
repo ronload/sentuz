@@ -75,7 +75,7 @@ export function AppSidebar({
   const displayEmail = selectedAccount?.email || "";
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-4 p-4">
+    <aside className="flex h-full w-72 shrink-0 flex-col gap-4 p-4">
       {/* Account selector */}
       <DropdownMenu>
         <DropdownMenuTrigger className="bg-card flex h-12 w-full items-center gap-3 rounded-xl px-4 shadow-sm">

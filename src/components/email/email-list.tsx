@@ -1,13 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Inbox, LayoutList, Layers } from "lucide-react";
+import { Inbox, LayoutList, Layers, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EmailCard } from "./email-card";
 import { EmailCardStack } from "./email-card-stack";
 import { LayoutGroup } from "motion/react";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type EmailViewMode = "list" | "stack";
 export type DateFilter = "today" | "yesterday" | "thisWeek" | "thisMonth" | "older";
@@ -158,6 +165,36 @@ function DateFilterNav({
   dateFilter: DateFilter;
   onDateFilterChange?: (filter: DateFilter) => void;
 }) {
+  const isMobile = useIsMobile();
+  const currentLabel = DATE_FILTERS.find((f) => f.value === dateFilter)?.label || "Today";
+
+  if (isMobile) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger className="bg-card flex h-9 w-32 items-center justify-between rounded-lg px-3 shadow-sm">
+          <span className="text-sm font-medium whitespace-nowrap">{currentLabel}</span>
+          <ChevronDown className="text-muted-foreground h-4 w-4 shrink-0" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          style={{
+            zIndex: 99999,
+          }}
+        >
+          {DATE_FILTERS.map((item) => (
+            <DropdownMenuItem
+              key={item.value}
+              onClick={() => onDateFilterChange?.(item.value)}
+              className={dateFilter === item.value ? "bg-accent" : ""}
+            >
+              {item.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
     <div className="bg-card flex items-center gap-1 rounded-lg p-1 shadow-sm">
       {DATE_FILTERS.map((item) => (

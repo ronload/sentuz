@@ -3,6 +3,8 @@
 import * as React from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
+import { MobileSidebarSheet } from "@/components/layout/mobile-sidebar-sheet";
+import { MobileDetailHeader } from "@/components/layout/mobile-detail-header";
 import {
   EmailList,
   type EmailViewMode,
@@ -24,6 +26,8 @@ import { useFolders, useEmails, useEmailThread, useEmailActions } from "@/hooks/
 import { useInitialData } from "@/hooks/use-initial-data";
 import { useEmailPolling } from "@/hooks/use-email-polling";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 // localStorage keys for persisting user preferences
 const STORAGE_KEYS = {
@@ -46,6 +50,12 @@ interface DashboardClientProps {
 
 export function DashboardClient({ user }: DashboardClientProps) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
+
+  // Mobile navigation state
+  const [mobileView, setMobileView] = React.useState<"list" | "detail">("list");
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+
   const [selectedAccountId, setSelectedAccountIdState] = React.useState<string>();
   const [selectedFolderId, setSelectedFolderId] = React.useState<string>();
   const [selectedFolderType, setSelectedFolderTypeState] = React.useState<FolderType>(() => {
@@ -266,6 +276,15 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const handleSelectEmail = (email: { id: string; threadId?: string }) => {
     setSelectedEmailId(email.id);
     setSelectedThreadId(email.threadId || email.id);
+    // On mobile, switch to detail view when selecting an email
+    if (isMobile) {
+      setMobileView("detail");
+    }
+  };
+
+  // Mobile back button handler
+  const handleBackToList = () => {
+    setMobileView("list");
   };
 
   const handleStarEmail = async (emailId: string, isStarred: boolean) => {
@@ -413,27 +432,60 @@ export function DashboardClient({ user }: DashboardClientProps) {
 
   const selectedAccount = accountsWithEmail.find((acc) => acc.id === selectedAccountId);
 
+  // Get selected email for mobile header
+  const selectedEmail = emails.find((e) => e.id === selectedEmailId);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden">
-      {/* Sidebar */}
-      <AppSidebar
+      {/* Desktop Sidebar - hidden on mobile */}
+      <div className="hidden h-full md:block">
+        <AppSidebar
+          accounts={accountsWithEmail}
+          selectedAccountId={selectedAccountId}
+          selectedFolder={selectedFolderType}
+          onSelectAccount={(id) => {
+            const hasPreloadedData = accountDataMap.has(id);
+            setUseInitialEmails(hasPreloadedData && selectedFolderType === "inbox");
+            setSelectedAccountId(id);
+            setSelectedFolderType("inbox");
+            setSelectedFolderId(undefined);
+            setSelectedEmailId(undefined);
+            setSelectedThreadId(undefined);
+          }}
+          onSelectFolder={(folder) => {
+            if (folder !== selectedFolderType) {
+              setUseInitialEmails(false);
+            }
+            setSelectedFolderType(folder);
+            const matchingFolder = folders.find((f) => f.type === folder);
+            if (matchingFolder) {
+              setSelectedFolderId(matchingFolder.id);
+            }
+            setSelectedEmailId(undefined);
+            setSelectedThreadId(undefined);
+          }}
+          onAddAccount={handleAddAccount}
+          user={user}
+        />
+      </div>
+
+      {/* Mobile Sidebar Sheet */}
+      <MobileSidebarSheet
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
         accounts={accountsWithEmail}
         selectedAccountId={selectedAccountId}
         selectedFolder={selectedFolderType}
         onSelectAccount={(id) => {
-          // Check if the account has preloaded data
           const hasPreloadedData = accountDataMap.has(id);
-          // Use initial data if available and folder type is inbox
           setUseInitialEmails(hasPreloadedData && selectedFolderType === "inbox");
           setSelectedAccountId(id);
-          // Reset folder to inbox when switching accounts
           setSelectedFolderType("inbox");
           setSelectedFolderId(undefined);
           setSelectedEmailId(undefined);
           setSelectedThreadId(undefined);
         }}
         onSelectFolder={(folder) => {
-          // Only switch to subsequent data if folder actually changes
           if (folder !== selectedFolderType) {
             setUseInitialEmails(false);
           }
@@ -449,59 +501,78 @@ export function DashboardClient({ user }: DashboardClientProps) {
         user={user}
       />
 
-      {/* Main content area - using grid for precise 50/50 split */}
-      <div
-        className="min-w-0 flex-1 overflow-hidden p-4 pl-0"
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}
-      >
-        {/* Email list panel (50%) */}
-        <div className="flex flex-col gap-4 overflow-hidden">
-          {/* Searchbar */}
-          <Header onSearch={handleSearch} />
-
-          {/* Email list */}
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <EmailList
-              emails={emails}
-              isLoading={emailsLoading}
-              selectedEmailId={selectedEmailId}
-              viewMode={emailViewMode}
-              onViewModeChange={setEmailViewMode}
-              dateFilter={dateFilter}
-              onDateFilterChange={handleDateFilterChange}
-              onSelectEmail={handleSelectEmail}
-              onStarEmail={handleStarEmail}
-              onMarkAsRead={handleMarkAsRead}
-              onMarkAsUnread={handleMarkAsUnread}
-              onDeleteEmail={handleDeleteEmail}
-              onUnsubscribeEmail={handleUnsubscribe}
-              unsubscribedIds={unsubscribedIds}
-              onLoadMore={loadMore}
-              hasMore={hasMore}
-              currentAccountEmail={selectedAccount?.email}
-              currentAccountImage={selectedAccount?.image}
-              newEmailIds={newEmailIds}
+      {/* Main content area */}
+      <div className="min-w-0 flex-1 overflow-hidden p-4 md:pl-0">
+        <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Email list panel */}
+          <div
+            className={cn(
+              "flex flex-col gap-4 overflow-hidden",
+              isMobile && mobileView === "detail" && "hidden"
+            )}
+          >
+            {/* Searchbar with mobile menu button */}
+            <Header
+              onSearch={handleSearch}
+              onMenuClick={() => setSidebarOpen(true)}
+              showMenuButton={isMobile}
             />
-          </div>
-        </div>
 
-        {/* Email thread panel (50%) */}
-        <div className="overflow-hidden">
-          <EmailThreadView
-            messages={threadMessages}
-            isLoading={threadLoading}
-            currentAccountEmail={selectedAccount?.email}
-            currentAccountImage={selectedAccount?.image}
-            onReply={handleReply}
-            onForward={handleForward}
-            onStar={(emailId) => {
-              const email = threadMessages.find((m) => m.id === emailId);
-              if (email) {
-                handleStarEmail(emailId, !email.isStarred);
-              }
-            }}
-            onDelete={handleDeleteEmail}
-          />
+            {/* Email list */}
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <EmailList
+                emails={emails}
+                isLoading={emailsLoading}
+                selectedEmailId={selectedEmailId}
+                viewMode={emailViewMode}
+                onViewModeChange={setEmailViewMode}
+                dateFilter={dateFilter}
+                onDateFilterChange={handleDateFilterChange}
+                onSelectEmail={handleSelectEmail}
+                onStarEmail={handleStarEmail}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAsUnread={handleMarkAsUnread}
+                onDeleteEmail={handleDeleteEmail}
+                onUnsubscribeEmail={handleUnsubscribe}
+                unsubscribedIds={unsubscribedIds}
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                currentAccountEmail={selectedAccount?.email}
+                currentAccountImage={selectedAccount?.image}
+                newEmailIds={newEmailIds}
+              />
+            </div>
+          </div>
+
+          {/* Email thread panel */}
+          <div
+            className={cn(
+              "flex flex-col overflow-hidden",
+              isMobile && mobileView === "list" && "hidden"
+            )}
+          >
+            {/* Mobile back header */}
+            {isMobile && mobileView === "detail" && (
+              <MobileDetailHeader onBack={handleBackToList} subject={selectedEmail?.subject} />
+            )}
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <EmailThreadView
+                messages={threadMessages}
+                isLoading={threadLoading}
+                currentAccountEmail={selectedAccount?.email}
+                currentAccountImage={selectedAccount?.image}
+                onReply={handleReply}
+                onForward={handleForward}
+                onStar={(emailId) => {
+                  const email = threadMessages.find((m) => m.id === emailId);
+                  if (email) {
+                    handleStarEmail(emailId, !email.isStarred);
+                  }
+                }}
+                onDelete={handleDeleteEmail}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

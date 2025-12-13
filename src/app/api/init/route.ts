@@ -33,7 +33,7 @@ export async function GET() {
         const emailService = await createEmailServiceFromAccount(account);
         const [folders, emailsResponse] = await Promise.all([
           emailService.listFolders(),
-          emailService.listEmails({ folderId: "INBOX", maxResults: 200 }),
+          emailService.listEmails({ folderId: "INBOX", maxResults: 1000 }),
         ]);
         const inboxFolder = folders.find((f) => f.type === "inbox");
         return {
