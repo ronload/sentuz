@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createEmailServiceFromAccount } from "@/lib/email";
+import { TokenExpiredError } from "@/lib/oauth/errors";
 
 // GET /api/init - Returns all initial data in one request for faster loading
 export async function GET() {
@@ -43,12 +44,14 @@ export async function GET() {
           defaultFolderId: inboxFolder?.id || "INBOX",
         };
       } catch (error) {
+        const needsReauth = error instanceof TokenExpiredError;
         console.error(`Error fetching data for account ${account.id}:`, error);
         return {
           accountId: account.id,
           folders: [],
           emails: { messages: [], nextPageToken: undefined },
           defaultFolderId: "INBOX",
+          needsReauth,
         };
       }
     });
@@ -62,15 +65,23 @@ export async function GET() {
         folders: (typeof accountDataArray)[number]["folders"];
         emails: (typeof accountDataArray)[number]["emails"];
         defaultFolderId: string;
+        needsReauth?: boolean;
       }
     > = {};
+
+    // Track which accounts need reauth
+    const accountsNeedingReauth = new Set<string>();
 
     for (const data of accountDataArray) {
       accountDataMap[data.accountId] = {
         folders: data.folders,
         emails: data.emails,
         defaultFolderId: data.defaultFolderId,
+        needsReauth: data.needsReauth,
       };
+      if (data.needsReauth) {
+        accountsNeedingReauth.add(data.accountId);
+      }
     }
 
     // 4. Return all data in one response
@@ -81,6 +92,7 @@ export async function GET() {
         providerAccountId: acc.providerAccountId,
         email: acc.email,
         image: acc.image,
+        needsReauth: accountsNeedingReauth.has(acc.id),
       })),
       accountDataMap,
       defaultAccountId: defaultAccount.id,

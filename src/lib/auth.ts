@@ -38,6 +38,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async signIn({ account }) {
+      // Update existing account tokens on re-authorization
+      if (account) {
+        await prisma.account.updateMany({
+          where: {
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+          },
+          data: {
+            access_token: account.access_token,
+            refresh_token: account.refresh_token,
+            expires_at: account.expires_at,
+          },
+        });
+      }
+
       // Check if this is account linking mode
       const cookieStore = await cookies();
       const linkUserId = cookieStore.get(LINK_USER_ID_COOKIE)?.value;

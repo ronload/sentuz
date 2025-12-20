@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { TokenExpiredError } from "./errors";
 
 interface TokenResponse {
   access_token: string;
@@ -7,7 +8,15 @@ interface TokenResponse {
   token_type: string;
 }
 
-async function refreshGoogleToken(refreshToken: string): Promise<TokenResponse> {
+interface OAuthError {
+  error: string;
+  error_description?: string;
+}
+
+async function refreshGoogleToken(
+  refreshToken: string,
+  accountId: string
+): Promise<TokenResponse> {
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: {
@@ -22,14 +31,25 @@ async function refreshGoogleToken(refreshToken: string): Promise<TokenResponse> 
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to refresh Google token: ${error}`);
+    const errorText = await response.text();
+    try {
+      const errorJson: OAuthError = JSON.parse(errorText);
+      if (errorJson.error === "invalid_grant") {
+        throw new TokenExpiredError(accountId, "google", errorJson.error_description);
+      }
+    } catch (e) {
+      if (e instanceof TokenExpiredError) throw e;
+    }
+    throw new Error(`Failed to refresh Google token: ${errorText}`);
   }
 
   return response.json();
 }
 
-async function refreshMicrosoftToken(refreshToken: string): Promise<TokenResponse> {
+async function refreshMicrosoftToken(
+  refreshToken: string,
+  accountId: string
+): Promise<TokenResponse> {
   const response = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
     method: "POST",
     headers: {
@@ -45,8 +65,16 @@ async function refreshMicrosoftToken(refreshToken: string): Promise<TokenRespons
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to refresh Microsoft token: ${error}`);
+    const errorText = await response.text();
+    try {
+      const errorJson: OAuthError = JSON.parse(errorText);
+      if (errorJson.error === "invalid_grant") {
+        throw new TokenExpiredError(accountId, "microsoft-entra-id", errorJson.error_description);
+      }
+    } catch (e) {
+      if (e instanceof TokenExpiredError) throw e;
+    }
+    throw new Error(`Failed to refresh Microsoft token: ${errorText}`);
   }
 
   return response.json();
@@ -92,9 +120,9 @@ export async function getValidAccessToken(accountOrId: string | AccountData): Pr
   let tokenResponse: TokenResponse;
 
   if (account.provider === "google") {
-    tokenResponse = await refreshGoogleToken(account.refresh_token);
+    tokenResponse = await refreshGoogleToken(account.refresh_token, account.id);
   } else if (account.provider === "microsoft-entra-id" || account.provider === "azure-ad") {
-    tokenResponse = await refreshMicrosoftToken(account.refresh_token);
+    tokenResponse = await refreshMicrosoftToken(account.refresh_token, account.id);
   } else {
     throw new Error(`Unknown provider: ${account.provider}`);
   }

@@ -48,6 +48,7 @@ export interface Account {
   providerAccountId: string;
   email?: string | null;
   image?: string | null;
+  needsReauth?: boolean;
 }
 
 interface RawEmailData {

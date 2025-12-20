@@ -428,6 +428,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
     email: acc.email || user.email || acc.providerAccountId,
     provider: acc.provider,
     image: acc.image || undefined,
+    needsReauth: acc.needsReauth,
   }));
 
   const selectedAccount = accountsWithEmail.find((acc) => acc.id === selectedAccountId);

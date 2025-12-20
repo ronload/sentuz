@@ -19,7 +19,7 @@ import {
   User,
   ChevronRight,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +39,7 @@ interface Account {
   email: string;
   provider: string;
   image?: string;
+  needsReauth?: boolean;
 }
 
 type FolderType = "inbox" | "starred" | "sent" | "drafts" | "important" | "spam" | "trash";
@@ -92,7 +93,15 @@ export function AppSidebar({
           {accounts.map((account) => (
             <DropdownMenuItem
               key={account.id}
-              onClick={() => onSelectAccount(account.id)}
+              onClick={() => {
+                if (account.needsReauth) {
+                  const provider =
+                    account.provider === "google" ? "google" : "microsoft-entra-id";
+                  signIn(provider);
+                } else {
+                  onSelectAccount(account.id);
+                }
+              }}
               className={selectedAccountId === account.id ? "bg-accent" : ""}
             >
               <Avatar className="mr-2 h-6 w-6">
@@ -101,7 +110,13 @@ export function AppSidebar({
                   {account.email[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="truncate">{account.email}</span>
+              <span className="flex-1 truncate">{account.email}</span>
+              {account.needsReauth && (
+                <span className="text-destructive ml-2 flex items-center gap-1 text-xs">
+                  <AlertTriangle className="h-3 w-3" />
+                  Reconnect
+                </span>
+              )}
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
